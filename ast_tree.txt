@@ -1,0 +1,1057 @@
+Crate {
+    id: NodeId(4294967040),
+    attrs: [],
+    items: [
+        Item {
+            attrs: [],
+            id: NodeId(4294967040),
+            span: src/main.rs:1:1: 1:9 (#0),
+            vis: Visibility {
+                kind: Inherited,
+                span: no-location (#0),
+                tokens: None,
+            },
+            kind: Mod(
+                Default,
+                cli#0,
+                Unloaded,
+            ),
+            tokens: None,
+        },
+        Item {
+            attrs: [],
+            id: NodeId(4294967040),
+            span: src/main.rs:2:1: 2:12 (#0),
+            vis: Visibility {
+                kind: Inherited,
+                span: src/main.rs:2:1: 2:1 (#0),
+                tokens: None,
+            },
+            kind: Mod(
+                Default,
+                domain#0,
+                Unloaded,
+            ),
+            tokens: None,
+        },
+        Item {
+            attrs: [],
+            id: NodeId(4294967040),
+            span: src/main.rs:3:1: 3:13 (#0),
+            vis: Visibility {
+                kind: Inherited,
+                span: src/main.rs:3:1: 3:1 (#0),
+                tokens: None,
+            },
+            kind: Mod(
+                Default,
+                storage#0,
+                Unloaded,
+            ),
+            tokens: None,
+        },
+        Item {
+            attrs: [],
+            id: NodeId(4294967040),
+            span: src/main.rs:4:1: 4:32 (#0),
+            vis: Visibility {
+                kind: Inherited,
+                span: src/main.rs:4:1: 4:1 (#0),
+                tokens: None,
+            },
+            kind: Use(
+                UseTree {
+                    prefix: Path {
+                        span: src/main.rs:4:5: 4:31 (#0),
+                        segments: [
+                            PathSegment {
+                                ident: crate#0,
+                                id: NodeId(4294967040),
+                                args: None,
+                            },
+                            PathSegment {
+                                ident: cli#0,
+                                id: NodeId(4294967040),
+                                args: None,
+                            },
+                            PathSegment {
+                                ident: SessionOutcome#0,
+                                id: NodeId(4294967040),
+                                args: None,
+                            },
+                        ],
+                        tokens: None,
+                    },
+                    kind: Simple(
+                        None,
+                    ),
+                    span: src/main.rs:4:5: 4:31 (#0),
+                },
+            ),
+            tokens: None,
+        },
+        Item {
+            attrs: [],
+            id: NodeId(4294967040),
+            span: src/main.rs:5:1: 5:20 (#0),
+            vis: Visibility {
+                kind: Inherited,
+                span: src/main.rs:5:1: 5:1 (#0),
+                tokens: None,
+            },
+            kind: Use(
+                UseTree {
+                    prefix: Path {
+                        span: src/main.rs:5:5: 5:19 (#0),
+                        segments: [
+                            PathSegment {
+                                ident: anyhow#0,
+                                id: NodeId(4294967040),
+                                args: None,
+                            },
+                            PathSegment {
+                                ident: Result#0,
+                                id: NodeId(4294967040),
+                                args: None,
+                            },
+                        ],
+                        tokens: None,
+                    },
+                    kind: Simple(
+                        None,
+                    ),
+                    span: src/main.rs:5:5: 5:19 (#0),
+                },
+            ),
+            tokens: None,
+        },
+        Item {
+            attrs: [],
+            id: NodeId(4294967040),
+            span: src/main.rs:7:1: 28:2 (#0),
+            vis: Visibility {
+                kind: Inherited,
+                span: src/main.rs:7:1: 7:1 (#0),
+                tokens: None,
+            },
+            kind: Fn(
+                Fn {
+                    defaultness: Implicit,
+                    ident: main#0,
+                    generics: Generics {
+                        params: [],
+                        where_clause: WhereClause {
+                            has_where_token: false,
+                            predicates: [],
+                            span: src/main.rs:7:24: 7:24 (#0),
+                        },
+                        span: src/main.rs:7:8: 7:8 (#0),
+                    },
+                    sig: FnSig {
+                        header: FnHeader {
+                            constness: No,
+                            coroutine_kind: None,
+                            safety: Default,
+                            ext: None,
+                        },
+                        decl: FnDecl {
+                            inputs: [],
+                            output: Ty(
+                                Ty {
+                                    id: NodeId(4294967040),
+                                    kind: Path(
+                                        None,
+                                        Path {
+                                            span: src/main.rs:7:14: 7:24 (#0),
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Result#0,
+                                                    id: NodeId(4294967040),
+                                                    args: Some(
+                                                        AngleBracketed(
+                                                            AngleBracketedArgs {
+                                                                span: src/main.rs:7:20: 7:24 (#0),
+                                                                args: [
+                                                                    Arg(
+                                                                        Type(
+                                                                            Ty {
+                                                                                id: NodeId(4294967040),
+                                                                                kind: Tup(
+                                                                                    [],
+                                                                                ),
+                                                                                span: src/main.rs:7:21: 7:23 (#0),
+                                                                                tokens: None,
+                                                                            },
+                                                                        ),
+                                                                    ),
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ),
+                                                },
+                                            ],
+                                            tokens: None,
+                                        },
+                                    ),
+                                    span: src/main.rs:7:14: 7:24 (#0),
+                                    tokens: None,
+                                },
+                            ),
+                        },
+                        span: src/main.rs:7:1: 7:24 (#0),
+                    },
+                    contract: None,
+                    define_opaque: None,
+                    body: Some(
+                        Block {
+                            stmts: [
+                                Stmt {
+                                    id: NodeId(4294967040),
+                                    kind: Let(
+                                        Local {
+                                            id: NodeId(4294967040),
+                                            super_: None,
+                                            pat: Pat {
+                                                id: NodeId(4294967040),
+                                                kind: Ident(
+                                                    BindingMode(
+                                                        No,
+                                                        Mut,
+                                                    ),
+                                                    home#0,
+                                                    None,
+                                                ),
+                                                span: src/main.rs:8:9: 8:17 (#0),
+                                                tokens: None,
+                                            },
+                                            ty: None,
+                                            kind: Init(
+                                                Expr {
+                                                    id: NodeId(4294967040),
+                                                    kind: Try(
+                                                        Expr {
+                                                            id: NodeId(4294967040),
+                                                            kind: Call(
+                                                                Expr {
+                                                                    id: NodeId(4294967040),
+                                                                    kind: Path(
+                                                                        None,
+                                                                        Path {
+                                                                            span: src/main.rs:8:20: 8:44 (#0),
+                                                                            segments: [
+                                                                                PathSegment {
+                                                                                    ident: storage#0,
+                                                                                    id: NodeId(4294967040),
+                                                                                    args: None,
+                                                                                },
+                                                                                PathSegment {
+                                                                                    ident: load_or_default#0,
+                                                                                    id: NodeId(4294967040),
+                                                                                    args: None,
+                                                                                },
+                                                                            ],
+                                                                            tokens: None,
+                                                                        },
+                                                                    ),
+                                                                    span: src/main.rs:8:20: 8:44 (#0),
+                                                                    attrs: [],
+                                                                    tokens: None,
+                                                                },
+                                                                [],
+                                                            ),
+                                                            span: src/main.rs:8:20: 8:46 (#0),
+                                                            attrs: [],
+                                                            tokens: None,
+                                                        },
+                                                    ),
+                                                    span: src/main.rs:8:20: 8:47 (#0),
+                                                    attrs: [],
+                                                    tokens: None,
+                                                },
+                                            ),
+                                            span: src/main.rs:8:5: 8:48 (#0),
+                                            colon_sp: None,
+                                            attrs: [],
+                                            tokens: None,
+                                        },
+                                    ),
+                                    span: src/main.rs:8:5: 8:48 (#0),
+                                },
+                                Stmt {
+                                    id: NodeId(4294967040),
+                                    kind: Semi(
+                                        Expr {
+                                            id: NodeId(4294967040),
+                                            kind: Call(
+                                                Expr {
+                                                    id: NodeId(4294967040),
+                                                    kind: Path(
+                                                        None,
+                                                        Path {
+                                                            span: src/main.rs:10:5: 10:23 (#0),
+                                                            segments: [
+                                                                PathSegment {
+                                                                    ident: cli#0,
+                                                                    id: NodeId(4294967040),
+                                                                    args: None,
+                                                                },
+                                                                PathSegment {
+                                                                    ident: print_welcome#0,
+                                                                    id: NodeId(4294967040),
+                                                                    args: None,
+                                                                },
+                                                            ],
+                                                            tokens: None,
+                                                        },
+                                                    ),
+                                                    span: src/main.rs:10:5: 10:23 (#0),
+                                                    attrs: [],
+                                                    tokens: None,
+                                                },
+                                                [],
+                                            ),
+                                            span: src/main.rs:10:5: 10:25 (#0),
+                                            attrs: [],
+                                            tokens: None,
+                                        },
+                                    ),
+                                    span: src/main.rs:10:5: 10:26 (#0),
+                                },
+                                Stmt {
+                                    id: NodeId(4294967040),
+                                    kind: MacCall(
+                                        MacCallStmt {
+                                            mac: MacCall {
+                                                path: Path {
+                                                    span: src/main.rs:11:5: 11:12 (#0),
+                                                    segments: [
+                                                        PathSegment {
+                                                            ident: println#0,
+                                                            id: NodeId(4294967040),
+                                                            args: None,
+                                                        },
+                                                    ],
+                                                    tokens: None,
+                                                },
+                                                args: DelimArgs {
+                                                    dspan: DelimSpan {
+                                                        open: src/main.rs:11:13: 11:14 (#0),
+                                                        close: src/main.rs:11:40: 11:41 (#0),
+                                                    },
+                                                    delim: Parenthesis,
+                                                    tokens: TokenStream(
+                                                        [
+                                                            Token(
+                                                                Token {
+                                                                    kind: Literal(
+                                                                        Lit {
+                                                                            kind: Str,
+                                                                            symbol: "{}",
+                                                                            suffix: None,
+                                                                        },
+                                                                    ),
+                                                                    span: src/main.rs:11:14: 11:18 (#0),
+                                                                },
+                                                                Joint,
+                                                            ),
+                                                            Token(
+                                                                Token {
+                                                                    kind: Comma,
+                                                                    span: src/main.rs:11:18: 11:19 (#0),
+                                                                },
+                                                                Alone,
+                                                            ),
+                                                            Token(
+                                                                Token {
+                                                                    kind: Ident(
+                                                                        "home",
+                                                                        No,
+                                                                    ),
+                                                                    span: src/main.rs:11:20: 11:24 (#0),
+                                                                },
+                                                                Joint,
+                                                            ),
+                                                            Token(
+                                                                Token {
+                                                                    kind: Dot,
+                                                                    span: src/main.rs:11:24: 11:25 (#0),
+                                                                },
+                                                                JointHidden,
+                                                            ),
+                                                            Token(
+                                                                Token {
+                                                                    kind: Ident(
+                                                                        "render_status",
+                                                                        No,
+                                                                    ),
+                                                                    span: src/main.rs:11:25: 11:38 (#0),
+                                                                },
+                                                                JointHidden,
+                                                            ),
+                                                            Delimited(
+                                                                DelimSpan {
+                                                                    open: src/main.rs:11:38: 11:39 (#0),
+                                                                    close: src/main.rs:11:39: 11:40 (#0),
+                                                                },
+                                                                DelimSpacing {
+                                                                    open: JointHidden,
+                                                                    close: JointHidden,
+                                                                },
+                                                                Parenthesis,
+                                                                TokenStream(
+                                                                    [],
+                                                                ),
+                                                            ),
+                                                        ],
+                                                    ),
+                                                },
+                                            },
+                                            style: Semicolon,
+                                            attrs: [],
+                                            tokens: None,
+                                        },
+                                    ),
+                                    span: src/main.rs:11:5: 11:42 (#0),
+                                },
+                                Stmt {
+                                    id: NodeId(4294967040),
+                                    kind: Expr(
+                                        Expr {
+                                            id: NodeId(4294967040),
+                                            kind: Loop(
+                                                Block {
+                                                    stmts: [
+                                                        Stmt {
+                                                            id: NodeId(4294967040),
+                                                            kind: Expr(
+                                                                Expr {
+                                                                    id: NodeId(4294967040),
+                                                                    kind: Match(
+                                                                        Expr {
+                                                                            id: NodeId(4294967040),
+                                                                            kind: Call(
+                                                                                Expr {
+                                                                                    id: NodeId(4294967040),
+                                                                                    kind: Path(
+                                                                                        None,
+                                                                                        Path {
+                                                                                            span: src/main.rs:13:15: 13:38 (#0),
+                                                                                            segments: [
+                                                                                                PathSegment {
+                                                                                                    ident: cli#0,
+                                                                                                    id: NodeId(4294967040),
+                                                                                                    args: None,
+                                                                                                },
+                                                                                                PathSegment {
+                                                                                                    ident: run_repl_iteration#0,
+                                                                                                    id: NodeId(4294967040),
+                                                                                                    args: None,
+                                                                                                },
+                                                                                            ],
+                                                                                            tokens: None,
+                                                                                        },
+                                                                                    ),
+                                                                                    span: src/main.rs:13:15: 13:38 (#0),
+                                                                                    attrs: [],
+                                                                                    tokens: None,
+                                                                                },
+                                                                                [
+                                                                                    Expr {
+                                                                                        id: NodeId(4294967040),
+                                                                                        kind: AddrOf(
+                                                                                            Ref,
+                                                                                            Mut,
+                                                                                            Expr {
+                                                                                                id: NodeId(4294967040),
+                                                                                                kind: Path(
+                                                                                                    None,
+                                                                                                    Path {
+                                                                                                        span: src/main.rs:13:44: 13:48 (#0),
+                                                                                                        segments: [
+                                                                                                            PathSegment {
+                                                                                                                ident: home#0,
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                args: None,
+                                                                                                            },
+                                                                                                        ],
+                                                                                                        tokens: None,
+                                                                                                    },
+                                                                                                ),
+                                                                                                span: src/main.rs:13:44: 13:48 (#0),
+                                                                                                attrs: [],
+                                                                                                tokens: None,
+                                                                                            },
+                                                                                        ),
+                                                                                        span: src/main.rs:13:39: 13:48 (#0),
+                                                                                        attrs: [],
+                                                                                        tokens: None,
+                                                                                    },
+                                                                                ],
+                                                                            ),
+                                                                            span: src/main.rs:13:15: 13:49 (#0),
+                                                                            attrs: [],
+                                                                            tokens: None,
+                                                                        },
+                                                                        [
+                                                                            Arm {
+                                                                                attrs: [],
+                                                                                pat: Pat {
+                                                                                    id: NodeId(4294967040),
+                                                                                    kind: TupleStruct(
+                                                                                        None,
+                                                                                        Path {
+                                                                                            span: src/main.rs:14:13: 14:15 (#0),
+                                                                                            segments: [
+                                                                                                PathSegment {
+                                                                                                    ident: Ok#0,
+                                                                                                    id: NodeId(4294967040),
+                                                                                                    args: None,
+                                                                                                },
+                                                                                            ],
+                                                                                            tokens: None,
+                                                                                        },
+                                                                                        [
+                                                                                            Pat {
+                                                                                                id: NodeId(4294967040),
+                                                                                                kind: Path(
+                                                                                                    None,
+                                                                                                    Path {
+                                                                                                        span: src/main.rs:14:16: 14:40 (#0),
+                                                                                                        segments: [
+                                                                                                            PathSegment {
+                                                                                                                ident: SessionOutcome#0,
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                args: None,
+                                                                                                            },
+                                                                                                            PathSegment {
+                                                                                                                ident: Continue#0,
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                args: None,
+                                                                                                            },
+                                                                                                        ],
+                                                                                                        tokens: None,
+                                                                                                    },
+                                                                                                ),
+                                                                                                span: src/main.rs:14:16: 14:40 (#0),
+                                                                                                tokens: None,
+                                                                                            },
+                                                                                        ],
+                                                                                    ),
+                                                                                    span: src/main.rs:14:13: 14:41 (#0),
+                                                                                    tokens: None,
+                                                                                },
+                                                                                guard: None,
+                                                                                body: Some(
+                                                                                    Expr {
+                                                                                        id: NodeId(4294967040),
+                                                                                        kind: Block(
+                                                                                            Block {
+                                                                                                stmts: [
+                                                                                                    Stmt {
+                                                                                                        id: NodeId(4294967040),
+                                                                                                        kind: Semi(
+                                                                                                            Expr {
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                kind: Try(
+                                                                                                                    Expr {
+                                                                                                                        id: NodeId(4294967040),
+                                                                                                                        kind: Call(
+                                                                                                                            Expr {
+                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                kind: Path(
+                                                                                                                                    None,
+                                                                                                                                    Path {
+                                                                                                                                        span: src/main.rs:15:17: 15:30 (#0),
+                                                                                                                                        segments: [
+                                                                                                                                            PathSegment {
+                                                                                                                                                ident: storage#0,
+                                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                                args: None,
+                                                                                                                                            },
+                                                                                                                                            PathSegment {
+                                                                                                                                                ident: save#0,
+                                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                                args: None,
+                                                                                                                                            },
+                                                                                                                                        ],
+                                                                                                                                        tokens: None,
+                                                                                                                                    },
+                                                                                                                                ),
+                                                                                                                                span: src/main.rs:15:17: 15:30 (#0),
+                                                                                                                                attrs: [],
+                                                                                                                                tokens: None,
+                                                                                                                            },
+                                                                                                                            [
+                                                                                                                                Expr {
+                                                                                                                                    id: NodeId(4294967040),
+                                                                                                                                    kind: AddrOf(
+                                                                                                                                        Ref,
+                                                                                                                                        Not,
+                                                                                                                                        Expr {
+                                                                                                                                            id: NodeId(4294967040),
+                                                                                                                                            kind: Path(
+                                                                                                                                                None,
+                                                                                                                                                Path {
+                                                                                                                                                    span: src/main.rs:15:32: 15:36 (#0),
+                                                                                                                                                    segments: [
+                                                                                                                                                        PathSegment {
+                                                                                                                                                            ident: home#0,
+                                                                                                                                                            id: NodeId(4294967040),
+                                                                                                                                                            args: None,
+                                                                                                                                                        },
+                                                                                                                                                    ],
+                                                                                                                                                    tokens: None,
+                                                                                                                                                },
+                                                                                                                                            ),
+                                                                                                                                            span: src/main.rs:15:32: 15:36 (#0),
+                                                                                                                                            attrs: [],
+                                                                                                                                            tokens: None,
+                                                                                                                                        },
+                                                                                                                                    ),
+                                                                                                                                    span: src/main.rs:15:31: 15:36 (#0),
+                                                                                                                                    attrs: [],
+                                                                                                                                    tokens: None,
+                                                                                                                                },
+                                                                                                                            ],
+                                                                                                                        ),
+                                                                                                                        span: src/main.rs:15:17: 15:37 (#0),
+                                                                                                                        attrs: [],
+                                                                                                                        tokens: None,
+                                                                                                                    },
+                                                                                                                ),
+                                                                                                                span: src/main.rs:15:17: 15:38 (#0),
+                                                                                                                attrs: [],
+                                                                                                                tokens: None,
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        span: src/main.rs:15:17: 15:39 (#0),
+                                                                                                    },
+                                                                                                ],
+                                                                                                id: NodeId(4294967040),
+                                                                                                rules: Default,
+                                                                                                span: src/main.rs:14:45: 16:14 (#0),
+                                                                                                tokens: None,
+                                                                                            },
+                                                                                            None,
+                                                                                        ),
+                                                                                        span: src/main.rs:14:45: 16:14 (#0),
+                                                                                        attrs: [],
+                                                                                        tokens: None,
+                                                                                    },
+                                                                                ),
+                                                                                span: src/main.rs:14:13: 16:14 (#0),
+                                                                                id: NodeId(4294967040),
+                                                                                is_placeholder: false,
+                                                                            },
+                                                                            Arm {
+                                                                                attrs: [],
+                                                                                pat: Pat {
+                                                                                    id: NodeId(4294967040),
+                                                                                    kind: TupleStruct(
+                                                                                        None,
+                                                                                        Path {
+                                                                                            span: src/main.rs:17:13: 17:15 (#0),
+                                                                                            segments: [
+                                                                                                PathSegment {
+                                                                                                    ident: Ok#0,
+                                                                                                    id: NodeId(4294967040),
+                                                                                                    args: None,
+                                                                                                },
+                                                                                            ],
+                                                                                            tokens: None,
+                                                                                        },
+                                                                                        [
+                                                                                            Pat {
+                                                                                                id: NodeId(4294967040),
+                                                                                                kind: Path(
+                                                                                                    None,
+                                                                                                    Path {
+                                                                                                        span: src/main.rs:17:16: 17:36 (#0),
+                                                                                                        segments: [
+                                                                                                            PathSegment {
+                                                                                                                ident: SessionOutcome#0,
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                args: None,
+                                                                                                            },
+                                                                                                            PathSegment {
+                                                                                                                ident: Exit#0,
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                args: None,
+                                                                                                            },
+                                                                                                        ],
+                                                                                                        tokens: None,
+                                                                                                    },
+                                                                                                ),
+                                                                                                span: src/main.rs:17:16: 17:36 (#0),
+                                                                                                tokens: None,
+                                                                                            },
+                                                                                        ],
+                                                                                    ),
+                                                                                    span: src/main.rs:17:13: 17:37 (#0),
+                                                                                    tokens: None,
+                                                                                },
+                                                                                guard: None,
+                                                                                body: Some(
+                                                                                    Expr {
+                                                                                        id: NodeId(4294967040),
+                                                                                        kind: Block(
+                                                                                            Block {
+                                                                                                stmts: [
+                                                                                                    Stmt {
+                                                                                                        id: NodeId(4294967040),
+                                                                                                        kind: Semi(
+                                                                                                            Expr {
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                kind: Try(
+                                                                                                                    Expr {
+                                                                                                                        id: NodeId(4294967040),
+                                                                                                                        kind: Call(
+                                                                                                                            Expr {
+                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                kind: Path(
+                                                                                                                                    None,
+                                                                                                                                    Path {
+                                                                                                                                        span: src/main.rs:18:17: 18:30 (#0),
+                                                                                                                                        segments: [
+                                                                                                                                            PathSegment {
+                                                                                                                                                ident: storage#0,
+                                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                                args: None,
+                                                                                                                                            },
+                                                                                                                                            PathSegment {
+                                                                                                                                                ident: save#0,
+                                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                                args: None,
+                                                                                                                                            },
+                                                                                                                                        ],
+                                                                                                                                        tokens: None,
+                                                                                                                                    },
+                                                                                                                                ),
+                                                                                                                                span: src/main.rs:18:17: 18:30 (#0),
+                                                                                                                                attrs: [],
+                                                                                                                                tokens: None,
+                                                                                                                            },
+                                                                                                                            [
+                                                                                                                                Expr {
+                                                                                                                                    id: NodeId(4294967040),
+                                                                                                                                    kind: AddrOf(
+                                                                                                                                        Ref,
+                                                                                                                                        Not,
+                                                                                                                                        Expr {
+                                                                                                                                            id: NodeId(4294967040),
+                                                                                                                                            kind: Path(
+                                                                                                                                                None,
+                                                                                                                                                Path {
+                                                                                                                                                    span: src/main.rs:18:32: 18:36 (#0),
+                                                                                                                                                    segments: [
+                                                                                                                                                        PathSegment {
+                                                                                                                                                            ident: home#0,
+                                                                                                                                                            id: NodeId(4294967040),
+                                                                                                                                                            args: None,
+                                                                                                                                                        },
+                                                                                                                                                    ],
+                                                                                                                                                    tokens: None,
+                                                                                                                                                },
+                                                                                                                                            ),
+                                                                                                                                            span: src/main.rs:18:32: 18:36 (#0),
+                                                                                                                                            attrs: [],
+                                                                                                                                            tokens: None,
+                                                                                                                                        },
+                                                                                                                                    ),
+                                                                                                                                    span: src/main.rs:18:31: 18:36 (#0),
+                                                                                                                                    attrs: [],
+                                                                                                                                    tokens: None,
+                                                                                                                                },
+                                                                                                                            ],
+                                                                                                                        ),
+                                                                                                                        span: src/main.rs:18:17: 18:37 (#0),
+                                                                                                                        attrs: [],
+                                                                                                                        tokens: None,
+                                                                                                                    },
+                                                                                                                ),
+                                                                                                                span: src/main.rs:18:17: 18:38 (#0),
+                                                                                                                attrs: [],
+                                                                                                                tokens: None,
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        span: src/main.rs:18:17: 18:39 (#0),
+                                                                                                    },
+                                                                                                    Stmt {
+                                                                                                        id: NodeId(4294967040),
+                                                                                                        kind: MacCall(
+                                                                                                            MacCallStmt {
+                                                                                                                mac: MacCall {
+                                                                                                                    path: Path {
+                                                                                                                        span: src/main.rs:19:17: 19:24 (#0),
+                                                                                                                        segments: [
+                                                                                                                            PathSegment {
+                                                                                                                                ident: println#0,
+                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                args: None,
+                                                                                                                            },
+                                                                                                                        ],
+                                                                                                                        tokens: None,
+                                                                                                                    },
+                                                                                                                    args: DelimArgs {
+                                                                                                                        dspan: DelimSpan {
+                                                                                                                            open: src/main.rs:19:25: 19:26 (#0),
+                                                                                                                            close: src/main.rs:19:57: 19:58 (#0),
+                                                                                                                        },
+                                                                                                                        delim: Parenthesis,
+                                                                                                                        tokens: TokenStream(
+                                                                                                                            [
+                                                                                                                                Token(
+                                                                                                                                    Token {
+                                                                                                                                        kind: Literal(
+                                                                                                                                            Lit {
+                                                                                                                                                kind: Str,
+                                                                                                                                                symbol: "SmartHome Controller beendet.",
+                                                                                                                                                suffix: None,
+                                                                                                                                            },
+                                                                                                                                        ),
+                                                                                                                                        span: src/main.rs:19:26: 19:57 (#0),
+                                                                                                                                    },
+                                                                                                                                    JointHidden,
+                                                                                                                                ),
+                                                                                                                            ],
+                                                                                                                        ),
+                                                                                                                    },
+                                                                                                                },
+                                                                                                                style: Semicolon,
+                                                                                                                attrs: [],
+                                                                                                                tokens: None,
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        span: src/main.rs:19:17: 19:59 (#0),
+                                                                                                    },
+                                                                                                    Stmt {
+                                                                                                        id: NodeId(4294967040),
+                                                                                                        kind: Semi(
+                                                                                                            Expr {
+                                                                                                                id: NodeId(4294967040),
+                                                                                                                kind: Break(
+                                                                                                                    None,
+                                                                                                                    None,
+                                                                                                                ),
+                                                                                                                span: src/main.rs:20:17: 20:22 (#0),
+                                                                                                                attrs: [],
+                                                                                                                tokens: None,
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        span: src/main.rs:20:17: 20:23 (#0),
+                                                                                                    },
+                                                                                                ],
+                                                                                                id: NodeId(4294967040),
+                                                                                                rules: Default,
+                                                                                                span: src/main.rs:17:41: 21:14 (#0),
+                                                                                                tokens: None,
+                                                                                            },
+                                                                                            None,
+                                                                                        ),
+                                                                                        span: src/main.rs:17:41: 21:14 (#0),
+                                                                                        attrs: [],
+                                                                                        tokens: None,
+                                                                                    },
+                                                                                ),
+                                                                                span: src/main.rs:17:13: 21:14 (#0),
+                                                                                id: NodeId(4294967040),
+                                                                                is_placeholder: false,
+                                                                            },
+                                                                            Arm {
+                                                                                attrs: [],
+                                                                                pat: Pat {
+                                                                                    id: NodeId(4294967040),
+                                                                                    kind: TupleStruct(
+                                                                                        None,
+                                                                                        Path {
+                                                                                            span: src/main.rs:22:13: 22:16 (#0),
+                                                                                            segments: [
+                                                                                                PathSegment {
+                                                                                                    ident: Err#0,
+                                                                                                    id: NodeId(4294967040),
+                                                                                                    args: None,
+                                                                                                },
+                                                                                            ],
+                                                                                            tokens: None,
+                                                                                        },
+                                                                                        [
+                                                                                            Pat {
+                                                                                                id: NodeId(4294967040),
+                                                                                                kind: Ident(
+                                                                                                    BindingMode(
+                                                                                                        No,
+                                                                                                        Not,
+                                                                                                    ),
+                                                                                                    err#0,
+                                                                                                    None,
+                                                                                                ),
+                                                                                                span: src/main.rs:22:17: 22:20 (#0),
+                                                                                                tokens: None,
+                                                                                            },
+                                                                                        ],
+                                                                                    ),
+                                                                                    span: src/main.rs:22:13: 22:21 (#0),
+                                                                                    tokens: None,
+                                                                                },
+                                                                                guard: None,
+                                                                                body: Some(
+                                                                                    Expr {
+                                                                                        id: NodeId(4294967040),
+                                                                                        kind: Block(
+                                                                                            Block {
+                                                                                                stmts: [
+                                                                                                    Stmt {
+                                                                                                        id: NodeId(4294967040),
+                                                                                                        kind: MacCall(
+                                                                                                            MacCallStmt {
+                                                                                                                mac: MacCall {
+                                                                                                                    path: Path {
+                                                                                                                        span: src/main.rs:23:17: 23:25 (#0),
+                                                                                                                        segments: [
+                                                                                                                            PathSegment {
+                                                                                                                                ident: eprintln#0,
+                                                                                                                                id: NodeId(4294967040),
+                                                                                                                                args: None,
+                                                                                                                            },
+                                                                                                                        ],
+                                                                                                                        tokens: None,
+                                                                                                                    },
+                                                                                                                    args: DelimArgs {
+                                                                                                                        dspan: DelimSpan {
+                                                                                                                            open: src/main.rs:23:26: 23:27 (#0),
+                                                                                                                            close: src/main.rs:23:42: 23:43 (#0),
+                                                                                                                        },
+                                                                                                                        delim: Parenthesis,
+                                                                                                                        tokens: TokenStream(
+                                                                                                                            [
+                                                                                                                                Token(
+                                                                                                                                    Token {
+                                                                                                                                        kind: Literal(
+                                                                                                                                            Lit {
+                                                                                                                                                kind: Str,
+                                                                                                                                                symbol: "Fehler: {err}",
+                                                                                                                                                suffix: None,
+                                                                                                                                            },
+                                                                                                                                        ),
+                                                                                                                                        span: src/main.rs:23:27: 23:42 (#0),
+                                                                                                                                    },
+                                                                                                                                    JointHidden,
+                                                                                                                                ),
+                                                                                                                            ],
+                                                                                                                        ),
+                                                                                                                    },
+                                                                                                                },
+                                                                                                                style: Semicolon,
+                                                                                                                attrs: [],
+                                                                                                                tokens: None,
+                                                                                                            },
+                                                                                                        ),
+                                                                                                        span: src/main.rs:23:17: 23:44 (#0),
+                                                                                                    },
+                                                                                                ],
+                                                                                                id: NodeId(4294967040),
+                                                                                                rules: Default,
+                                                                                                span: src/main.rs:22:25: 24:14 (#0),
+                                                                                                tokens: None,
+                                                                                            },
+                                                                                            None,
+                                                                                        ),
+                                                                                        span: src/main.rs:22:25: 24:14 (#0),
+                                                                                        attrs: [],
+                                                                                        tokens: None,
+                                                                                    },
+                                                                                ),
+                                                                                span: src/main.rs:22:13: 24:14 (#0),
+                                                                                id: NodeId(4294967040),
+                                                                                is_placeholder: false,
+                                                                            },
+                                                                        ],
+                                                                        Prefix,
+                                                                    ),
+                                                                    span: src/main.rs:13:9: 25:10 (#0),
+                                                                    attrs: [],
+                                                                    tokens: None,
+                                                                },
+                                                            ),
+                                                            span: src/main.rs:13:9: 25:10 (#0),
+                                                        },
+                                                    ],
+                                                    id: NodeId(4294967040),
+                                                    rules: Default,
+                                                    span: src/main.rs:12:10: 26:6 (#0),
+                                                    tokens: None,
+                                                },
+                                                None,
+                                                src/main.rs:12:5: 12:9 (#0),
+                                            ),
+                                            span: src/main.rs:12:5: 26:6 (#0),
+                                            attrs: [],
+                                            tokens: None,
+                                        },
+                                    ),
+                                    span: src/main.rs:12:5: 26:6 (#0),
+                                },
+                                Stmt {
+                                    id: NodeId(4294967040),
+                                    kind: Expr(
+                                        Expr {
+                                            id: NodeId(4294967040),
+                                            kind: Call(
+                                                Expr {
+                                                    id: NodeId(4294967040),
+                                                    kind: Path(
+                                                        None,
+                                                        Path {
+                                                            span: src/main.rs:27:5: 27:7 (#0),
+                                                            segments: [
+                                                                PathSegment {
+                                                                    ident: Ok#0,
+                                                                    id: NodeId(4294967040),
+                                                                    args: None,
+                                                                },
+                                                            ],
+                                                            tokens: None,
+                                                        },
+                                                    ),
+                                                    span: src/main.rs:27:5: 27:7 (#0),
+                                                    attrs: [],
+                                                    tokens: None,
+                                                },
+                                                [
+                                                    Expr {
+                                                        id: NodeId(4294967040),
+                                                        kind: Tup(
+                                                            [],
+                                                        ),
+                                                        span: src/main.rs:27:8: 27:10 (#0),
+                                                        attrs: [],
+                                                        tokens: None,
+                                                    },
+                                                ],
+                                            ),
+                                            span: src/main.rs:27:5: 27:11 (#0),
+                                            attrs: [],
+                                            tokens: None,
+                                        },
+                                    ),
+                                    span: src/main.rs:27:5: 27:11 (#0),
+                                },
+                            ],
+                            id: NodeId(4294967040),
+                            rules: Default,
+                            span: src/main.rs:7:25: 28:2 (#0),
+                            tokens: None,
+                        },
+                    ),
+                    eii_impls: [],
+                },
+            ),
+            tokens: None,
+        },
+    ],
+    spans: ModSpans {
+        inner_span: src/main.rs:1:1: 28:2 (#0),
+        inject_use_span: no-location (#0),
+    },
+    is_placeholder: false,
+}

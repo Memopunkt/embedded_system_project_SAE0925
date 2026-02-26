@@ -1,0 +1,3526 @@
+extern crate std;
+#[attr = PreludeImport]
+use std::prelude::rust_2021::*;
+mod cli {
+
+
+    use ::{};
+    use crate::domain::Command;
+    use crate::domain::OnOff;
+    use crate::domain::RoomSelection;
+    use crate::domain::SmartHome;
+    use crate::domain::TemperatureC;
+    use ::{};
+    use anyhow::anyhow;
+    use anyhow::Result;
+    use ::{};
+    use std::io;
+    use std::io::Write;
+    enum SessionOutcome { Continue, Exit, }
+    fn print_help() {
+        {
+            ::std::io::_print(format_arguments::from_str("\n=== SmartHome Commands ===\n"));
+        };
+        { ::std::io::_print(format_arguments::from_str("status\n")); };
+        {
+            ::std::io::_print(format_arguments::from_str("  Zeigt den aktuellen Gesamtstatus\n\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("heating set <room|all> <temp>\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("  Beispiel: heating set kitchen 22.5\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("heating on <room|all>\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("  Beispiel: heating on all\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("heating off <room|all>\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("  Beispiel: heating off bedroom\n\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("lights set <room|all> <on|off>\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("  Beispiel: lights set living on\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("lights toggle <room|all>\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("  Beispiel: lights toggle bath\n\n"));
+        };
+        { ::std::io::_print(format_arguments::from_str("security lock\n")); };
+        {
+            ::std::io::_print(format_arguments::from_str("security unlock\n\n"));
+        };
+        { ::std::io::_print(format_arguments::from_str("help\n")); };
+        {
+            ::std::io::_print(format_arguments::from_str("  Zeigt diese Hilfe\n"));
+        };
+        { ::std::io::_print(format_arguments::from_str("exit | quit\n")); };
+        {
+            ::std::io::_print(format_arguments::from_str("  Beendet die Anwendung\n\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("R\u{e4}ume: living, bedroom, kitchen, bath, all\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("Synonyme funktionieren ebenfalls: wohnzimmer, schlafzimmer, k\u{fc}che/kueche, bad, alle\n\n"));
+        };
+    }
+    fn print_welcome() {
+        {
+            ::std::io::_print(format_arguments::from_str("SmartHome Controller gestartet.\n"));
+        };
+        {
+            ::std::io::_print(format_arguments::from_str("Einmal starten, danach mehrere Commands nacheinander ausf\u{fc}hren.\n"));
+        };
+        print_help();
+    }
+    fn run_repl_iteration(home: &'_ mut SmartHome)
+        ->
+            Result<SessionOutcome> {
+        { ::std::io::_print(format_arguments::from_str("smarthome> ")); };
+        match branch(io::stdout().flush()) {
+            Break {  0: residual } => #[allow(unreachable_code)]
+                return from_residual(residual),
+            Continue {  0: val } => #[allow(unreachable_code)]
+                val,
+        };
+        let mut line = String::new();
+        let bytes =
+            match branch(io::stdin().read_line(&mut line)) {
+                Break {  0: residual } => #[allow(unreachable_code)]
+                    return from_residual(residual),
+                Continue {  0: val } => #[allow(unreachable_code)]
+                    val,
+            };
+        { ::std::io::_print(format_arguments::from_str("\n")); };
+        if bytes == 0 { return Ok(SessionOutcome::Exit); }
+        let trimmed = line.trim();
+        if trimmed.is_empty() { return Ok(SessionOutcome::Continue); }
+        if trimmed.eq_ignore_ascii_case("exit") ||
+                trimmed.eq_ignore_ascii_case("quit") {
+            return Ok(SessionOutcome::Exit);
+        }
+        if trimmed.eq_ignore_ascii_case("help") {
+            print_help();
+            return Ok(SessionOutcome::Continue);
+        }
+        if trimmed.eq_ignore_ascii_case("status") {
+            {
+                ::std::io::_print({
+                        super let args = (&home.render_status(),);
+                        super let args = [format_argument::new_display(args.0)];
+                        unsafe { format_arguments::new(b"\xc0\x01\n\x00", &args) }
+                    });
+            };
+            { ::std::io::_print(format_arguments::from_str("\n")); };
+            return Ok(SessionOutcome::Continue);
+        }
+        let cmd =
+            match branch(parse_command(trimmed)) {
+                Break {  0: residual } => #[allow(unreachable_code)]
+                    return from_residual(residual),
+                Continue {  0: val } => #[allow(unreachable_code)]
+                    val,
+            };
+        home.apply(cmd);
+        {
+            ::std::io::_print({
+                    super let args = (&home.render_status(),);
+                    super let args = [format_argument::new_display(args.0)];
+                    unsafe { format_arguments::new(b"\xc0\x01\n\x00", &args) }
+                });
+        };
+        { ::std::io::_print(format_arguments::from_str("\n")); };
+        Ok(SessionOutcome::Continue)
+    }
+    fn parse_command(input: &'_ str)
+        ->
+            Result<Command> {
+        let parts: Vec<&str> = input.split_whitespace().collect();
+        if parts.is_empty() {
+            return Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Leerer Command"));
+                            error
+                        }));
+        }
+        match parts[0].to_lowercase().as_str() {
+            "heating" => parse_heating(&parts),
+            "lights" => parse_lights(&parts),
+            "security" => parse_security(&parts),
+            _ =>
+                Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Unbekannter Command. Nutze \'help\' f\u{fc}r alle verf\u{fc}gbaren Befehle."));
+                            error
+                        })),
+        }
+    }
+    fn parse_heating(parts: &'_ [&'_ str])
+        ->
+            Result<Command> {
+        if parts.len() < 3 {
+            return Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiel: heating set kitchen 22"));
+                            error
+                        }));
+        }
+        match parts[1].to_lowercase().as_str() {
+            "set" => {
+                if parts.len() != 4 {
+                    return Err(::anyhow::__private::must_use({
+                                    let error =
+                                        ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiel: heating set kitchen 22"));
+                                    error
+                                }));
+                }
+                let where_ =
+                    match branch(RoomSelection::parse(parts[2])) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                let temp_value: f32 =
+                    match branch(parts[3].parse().map_err(|_|
+                                    ::anyhow::__private::must_use({
+                                            let error =
+                                                ::anyhow::__private::format_err(format_arguments::from_str("Temperatur ist keine g\u{fc}ltige Zahl"));
+                                            error
+                                        }))) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                let target =
+                    match branch(TemperatureC::new(temp_value).ok_or_else(||
+                                    ::anyhow::__private::must_use({
+                                            let error =
+                                                ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Temperatur. Erlaubt: 5.0\u{b0}C bis 35.0\u{b0}C"));
+                                            error
+                                        }))) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                Ok(Command::HeatingSet { where_, target })
+            }
+            "on" => {
+                if parts.len() != 3 {
+                    return Err(::anyhow::__private::must_use({
+                                    let error =
+                                        ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiel: heating on all"));
+                                    error
+                                }));
+                }
+                let where_ =
+                    match branch(RoomSelection::parse(parts[2])) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                Ok(Command::HeatingEnabled { where_, enabled: true })
+            }
+            "off" => {
+                if parts.len() != 3 {
+                    return Err(::anyhow::__private::must_use({
+                                    let error =
+                                        ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiel: heating off bedroom"));
+                                    error
+                                }));
+                }
+                let where_ =
+                    match branch(RoomSelection::parse(parts[2])) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                Ok(Command::HeatingEnabled { where_, enabled: false })
+            }
+            _ =>
+                Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Unbekannter heating-Befehl. Nutze: set/on/off"));
+                            error
+                        })),
+        }
+    }
+    fn parse_lights(parts: &'_ [&'_ str])
+        ->
+            Result<Command> {
+        if parts.len() < 3 {
+            return Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiele: lights set living on | lights toggle all"));
+                            error
+                        }));
+        }
+        match parts[1].to_lowercase().as_str() {
+            "set" => {
+                if parts.len() != 4 {
+                    return Err(::anyhow::__private::must_use({
+                                    let error =
+                                        ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiel: lights set living on"));
+                                    error
+                                }));
+                }
+                let where_ =
+                    match branch(RoomSelection::parse(parts[2])) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                let state =
+                    match branch(OnOff::parse(parts[3])) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                Ok(Command::LightsSet { where_, state })
+            }
+            "toggle" => {
+                if parts.len() != 3 {
+                    return Err(::anyhow::__private::must_use({
+                                    let error =
+                                        ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiel: lights toggle bath"));
+                                    error
+                                }));
+                }
+                let where_ =
+                    match branch(RoomSelection::parse(parts[2])) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                Ok(Command::LightsToggle { where_ })
+            }
+            _ =>
+                Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Unbekannter lights-Befehl. Nutze: set/toggle"));
+                            error
+                        })),
+        }
+    }
+    fn parse_security(parts: &'_ [&'_ str])
+        ->
+            Result<Command> {
+        if parts.len() != 2 {
+            return Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Ung\u{fc}ltige Eingabe. Beispiel: security lock | security unlock"));
+                            error
+                        }));
+        }
+        match parts[1].to_lowercase().as_str() {
+            "lock" => Ok(Command::SecurityLockAll),
+            "unlock" => Ok(Command::SecurityUnlockAll),
+            _ =>
+                Err(::anyhow::__private::must_use({
+                            let error =
+                                ::anyhow::__private::format_err(format_arguments::from_str("Unbekannter security-Befehl. Nutze: lock/unlock"));
+                            error
+                        })),
+        }
+    }
+}
+mod domain {
+    use ::{};
+    use anyhow::anyhow;
+    use anyhow::Result;
+    use ::{};
+    use serde::Deserialize;
+    use serde::Serialize;
+    use std::collections::HashMap;
+    use std::fmt;
+    const STATUS_LABEL_WIDTH: usize = 36;
+    enum Room { LivingRoom, BedRoom, Kitchen, Bath, }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for Room {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::write_str(f,
+                match self {
+                    Room::LivingRoom => "LivingRoom",
+                    Room::BedRoom => "BedRoom",
+                    Room::Kitchen => "Kitchen",
+                    Room::Bath => "Bath",
+                })
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::marker::Copy for Room { }
+    #[attr = AutomaticallyDerived]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    unsafe impl ::core::clone::TrivialClone for Room { }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for Room {
+        #[attr = Inline(Hint)]
+        fn clone(&self) -> Room { *self }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::cmp::Eq for Room {
+        #[attr = Inline(Hint)]
+        #[attr = Doc(DocAttribute {aliases: [],
+        inline: [],
+        cfg: [],
+        auto_cfg: [],
+        auto_cfg_change: [],
+        test_attrs: []})]
+        #[attr = Coverage(Off)]
+        fn assert_receiver_is_total_eq(&self) { }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::marker::StructuralPartialEq for Room { }
+    #[attr = AutomaticallyDerived]
+    impl ::core::cmp::PartialEq for Room {
+        #[attr = Inline(Hint)]
+        fn eq(&self, other: &'_ Room)
+            ->
+                bool {
+            let __self_discr = ::core::intrinsics::discriminant_value(self);
+            let __arg1_discr = ::core::intrinsics::discriminant_value(other);
+            __self_discr == __arg1_discr
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::hash::Hash for Room {
+        #[attr = Inline(Hint)]
+        fn hash<__H>(&self, state: &'_ mut __H) where
+            __H: ::core::hash::Hasher {
+            let __self_discr = ::core::intrinsics::discriminant_value(self);
+            ::core::hash::Hash::hash(&__self_discr, state)
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for Room {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    match *self {
+                        Room::LivingRoom =>
+                            _serde::Serializer::serialize_unit_variant(__serializer,
+                                "Room", 0u32, "LivingRoom"),
+                        Room::BedRoom =>
+                            _serde::Serializer::serialize_unit_variant(__serializer,
+                                "Room", 1u32, "BedRoom"),
+                        Room::Kitchen =>
+                            _serde::Serializer::serialize_unit_variant(__serializer,
+                                "Room", 2u32, "Kitchen"),
+                        Room::Bath =>
+                            _serde::Serializer::serialize_unit_variant(__serializer,
+                                "Room", 3u32, "Bath"),
+                    }
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for Room {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __field1, __field2, __field3, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "variant identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                1u64 => _serde::__private228::Ok(__Field::__field1),
+                                2u64 => _serde::__private228::Ok(__Field::__field2),
+                                3u64 => _serde::__private228::Ok(__Field::__field3),
+                                _ =>
+                                    _serde::__private228::Err(_serde::de::Error::invalid_value(_serde::de::Unexpected::Unsigned(__value),
+                                            &"variant index 0 <= i < 4")),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "LivingRoom" => _serde::__private228::Ok(__Field::__field0),
+                                "BedRoom" => _serde::__private228::Ok(__Field::__field1),
+                                "Kitchen" => _serde::__private228::Ok(__Field::__field2),
+                                "Bath" => _serde::__private228::Ok(__Field::__field3),
+                                _ => {
+                                    _serde::__private228::Err(_serde::de::Error::unknown_variant(__value,
+                                            VARIANTS))
+                                }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"LivingRoom" =>
+                                    _serde::__private228::Ok(__Field::__field0),
+                                b"BedRoom" => _serde::__private228::Ok(__Field::__field1),
+                                b"Kitchen" => _serde::__private228::Ok(__Field::__field2),
+                                b"Bath" => _serde::__private228::Ok(__Field::__field3),
+                                _ => {
+                                    let __value =
+                                        &_serde::__private228::from_utf8_lossy(__value);
+                                    _serde::__private228::Err(_serde::de::Error::unknown_variant(__value,
+                                            VARIANTS))
+                                }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<Room>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        Room;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "enum Room")
+                        }
+                        fn visit_enum<__A>(self, __data: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::EnumAccess<'de> {
+                            match match branch(_serde::de::EnumAccess::variant(__data))
+                                    {
+                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                        return from_residual(residual),
+                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                        val,
+                                } {
+                                (__Field::__field0, __variant) => {
+                                    match branch(_serde::de::VariantAccess::unit_variant(__variant))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    };
+                                    _serde::__private228::Ok(Room::LivingRoom)
+                                }
+                                (__Field::__field1, __variant) => {
+                                    match branch(_serde::de::VariantAccess::unit_variant(__variant))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    };
+                                    _serde::__private228::Ok(Room::BedRoom)
+                                }
+                                (__Field::__field2, __variant) => {
+                                    match branch(_serde::de::VariantAccess::unit_variant(__variant))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    };
+                                    _serde::__private228::Ok(Room::Kitchen)
+                                }
+                                (__Field::__field3, __variant) => {
+                                    match branch(_serde::de::VariantAccess::unit_variant(__variant))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    };
+                                    _serde::__private228::Ok(Room::Bath)
+                                }
+                            }
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const VARIANTS: &'static [&'static str] =
+                        &["LivingRoom", "BedRoom", "Kitchen", "Bath"];
+                    _serde::Deserializer::deserialize_enum(__deserializer,
+                        "Room", VARIANTS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<Room>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl Room {
+        const
+        ALL:
+        [Room; 4]
+        =
+        [Room::LivingRoom, Room::BedRoom, Room::Kitchen, Room::Bath];
+        fn as_str(self)
+            ->
+                &'static str {
+            match self {
+                Room::LivingRoom => "Wohnzimmer",
+                Room::BedRoom => "Schlafzimmer",
+                Room::Kitchen => "K\u{fc}che",
+                Room::Bath => "Bad",
+            }
+        }
+        fn parse(input: &'_ str)
+            ->
+                Result<Self> {
+            match input.trim().to_lowercase().as_str() {
+                "living" | "livingroom" | "wohnzimmer" =>
+                    Ok(Room::LivingRoom),
+                "bedroom" | "schlafzimmer" | "bed" => Ok(Room::BedRoom),
+                "kitchen" | "k\u{fc}che" | "kueche" => Ok(Room::Kitchen),
+                "bath" | "bad" | "bathroom" => Ok(Room::Bath),
+                other =>
+                    Err(::anyhow::__private::must_use({
+                                let error =
+                                    ::anyhow::__private::format_err({
+                                            super let args = (&other,);
+                                            super let args = [format_argument::new_display(args.0)];
+                                            unsafe {
+                                                format_arguments::new(b"\x12Unbekannter Raum: \xc0\x00",
+                                                    &args)
+                                            }
+                                        });
+                                error
+                            })),
+            }
+        }
+    }
+    impl fmt::Display for Room {
+        fn fmt(&self, f: &'_ mut fmt::Formatter<'_>)
+            -> fmt::Result { f.write_str(self.as_str()) }
+    }
+    enum RoomSelection { One(Room), All, }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for RoomSelection {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            match self {
+                RoomSelection::One(__self_0) =>
+                    ::core::fmt::Formatter::debug_tuple_field1_finish(f, "One",
+                        &__self_0),
+                RoomSelection::All =>
+                    ::core::fmt::Formatter::write_str(f, "All"),
+            }
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::marker::Copy for RoomSelection { }
+    #[attr = AutomaticallyDerived]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    unsafe impl ::core::clone::TrivialClone for RoomSelection { }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for RoomSelection {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                RoomSelection {
+            let _: ::core::clone::AssertParamIsClone<Room>;
+            *self
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::cmp::Eq for RoomSelection {
+        #[attr = Inline(Hint)]
+        #[attr = Doc(DocAttribute {aliases: [],
+        inline: [],
+        cfg: [],
+        auto_cfg: [],
+        auto_cfg_change: [],
+        test_attrs: []})]
+        #[attr = Coverage(Off)]
+        fn assert_receiver_is_total_eq(&self) {
+            let _: ::core::cmp::AssertParamIsEq<Room>;
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::marker::StructuralPartialEq for RoomSelection { }
+    #[attr = AutomaticallyDerived]
+    impl ::core::cmp::PartialEq for RoomSelection {
+        #[attr = Inline(Hint)]
+        fn eq(&self, other: &'_ RoomSelection)
+            ->
+                bool {
+            let __self_discr = ::core::intrinsics::discriminant_value(self);
+            let __arg1_discr = ::core::intrinsics::discriminant_value(other);
+            __self_discr == __arg1_discr &&
+                match (self, other) {
+                    (RoomSelection::One(__self_0), RoomSelection::One(__arg1_0))
+                        => __self_0 == __arg1_0,
+                    _ => true,
+                }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for RoomSelection {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    match *self {
+                        RoomSelection::One(ref __field0) =>
+                            _serde::Serializer::serialize_newtype_variant(__serializer,
+                                "RoomSelection", 0u32, "One", __field0),
+                        RoomSelection::All =>
+                            _serde::Serializer::serialize_unit_variant(__serializer,
+                                "RoomSelection", 1u32, "All"),
+                    }
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for RoomSelection {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __field1, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "variant identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                1u64 => _serde::__private228::Ok(__Field::__field1),
+                                _ =>
+                                    _serde::__private228::Err(_serde::de::Error::invalid_value(_serde::de::Unexpected::Unsigned(__value),
+                                            &"variant index 0 <= i < 2")),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "One" => _serde::__private228::Ok(__Field::__field0),
+                                "All" => _serde::__private228::Ok(__Field::__field1),
+                                _ => {
+                                    _serde::__private228::Err(_serde::de::Error::unknown_variant(__value,
+                                            VARIANTS))
+                                }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"One" => _serde::__private228::Ok(__Field::__field0),
+                                b"All" => _serde::__private228::Ok(__Field::__field1),
+                                _ => {
+                                    let __value =
+                                        &_serde::__private228::from_utf8_lossy(__value);
+                                    _serde::__private228::Err(_serde::de::Error::unknown_variant(__value,
+                                            VARIANTS))
+                                }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<RoomSelection>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        RoomSelection;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "enum RoomSelection")
+                        }
+                        fn visit_enum<__A>(self, __data: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::EnumAccess<'de> {
+                            match match branch(_serde::de::EnumAccess::variant(__data))
+                                    {
+                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                        return from_residual(residual),
+                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                        val,
+                                } {
+                                (__Field::__field0, __variant) =>
+                                    _serde::__private228::Result::map(_serde::de::VariantAccess::newtype_variant::<Room>(__variant),
+                                        RoomSelection::One),
+                                (__Field::__field1, __variant) => {
+                                    match branch(_serde::de::VariantAccess::unit_variant(__variant))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    };
+                                    _serde::__private228::Ok(RoomSelection::All)
+                                }
+                            }
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const VARIANTS: &'static [&'static str] = &["One", "All"];
+                    _serde::Deserializer::deserialize_enum(__deserializer,
+                        "RoomSelection", VARIANTS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<RoomSelection>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl RoomSelection {
+        fn parse(input: &'_ str)
+            ->
+                Result<Self> {
+            let trimmed = input.trim().to_lowercase();
+            if trimmed == "all" || trimmed == "alle" {
+                return Ok(RoomSelection::All);
+            }
+            Ok(RoomSelection::One(match branch(Room::parse(trimmed.as_str()))
+                        {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    }))
+        }
+        fn iter(self)
+            ->
+                Box<dyn Iterator<Item =
+                Room>> {
+            match self {
+                RoomSelection::One(r) => Box::new(std::iter::once(r)),
+                RoomSelection::All => Box::new(Room::ALL.into_iter()),
+            }
+        }
+    }
+    enum OnOff { On, Off, }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for OnOff {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::write_str(f,
+                match self { OnOff::On => "On", OnOff::Off => "Off", })
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::marker::Copy for OnOff { }
+    #[attr = AutomaticallyDerived]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    unsafe impl ::core::clone::TrivialClone for OnOff { }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for OnOff {
+        #[attr = Inline(Hint)]
+        fn clone(&self) -> OnOff { *self }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::cmp::Eq for OnOff {
+        #[attr = Inline(Hint)]
+        #[attr = Doc(DocAttribute {aliases: [],
+        inline: [],
+        cfg: [],
+        auto_cfg: [],
+        auto_cfg_change: [],
+        test_attrs: []})]
+        #[attr = Coverage(Off)]
+        fn assert_receiver_is_total_eq(&self) { }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::marker::StructuralPartialEq for OnOff { }
+    #[attr = AutomaticallyDerived]
+    impl ::core::cmp::PartialEq for OnOff {
+        #[attr = Inline(Hint)]
+        fn eq(&self, other: &'_ OnOff)
+            ->
+                bool {
+            let __self_discr = ::core::intrinsics::discriminant_value(self);
+            let __arg1_discr = ::core::intrinsics::discriminant_value(other);
+            __self_discr == __arg1_discr
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for OnOff {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    match *self {
+                        OnOff::On =>
+                            _serde::Serializer::serialize_unit_variant(__serializer,
+                                "OnOff", 0u32, "On"),
+                        OnOff::Off =>
+                            _serde::Serializer::serialize_unit_variant(__serializer,
+                                "OnOff", 1u32, "Off"),
+                    }
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for OnOff {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __field1, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "variant identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                1u64 => _serde::__private228::Ok(__Field::__field1),
+                                _ =>
+                                    _serde::__private228::Err(_serde::de::Error::invalid_value(_serde::de::Unexpected::Unsigned(__value),
+                                            &"variant index 0 <= i < 2")),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "On" => _serde::__private228::Ok(__Field::__field0),
+                                "Off" => _serde::__private228::Ok(__Field::__field1),
+                                _ => {
+                                    _serde::__private228::Err(_serde::de::Error::unknown_variant(__value,
+                                            VARIANTS))
+                                }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"On" => _serde::__private228::Ok(__Field::__field0),
+                                b"Off" => _serde::__private228::Ok(__Field::__field1),
+                                _ => {
+                                    let __value =
+                                        &_serde::__private228::from_utf8_lossy(__value);
+                                    _serde::__private228::Err(_serde::de::Error::unknown_variant(__value,
+                                            VARIANTS))
+                                }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<OnOff>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        OnOff;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "enum OnOff")
+                        }
+                        fn visit_enum<__A>(self, __data: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::EnumAccess<'de> {
+                            match match branch(_serde::de::EnumAccess::variant(__data))
+                                    {
+                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                        return from_residual(residual),
+                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                        val,
+                                } {
+                                (__Field::__field0, __variant) => {
+                                    match branch(_serde::de::VariantAccess::unit_variant(__variant))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    };
+                                    _serde::__private228::Ok(OnOff::On)
+                                }
+                                (__Field::__field1, __variant) => {
+                                    match branch(_serde::de::VariantAccess::unit_variant(__variant))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    };
+                                    _serde::__private228::Ok(OnOff::Off)
+                                }
+                            }
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const VARIANTS: &'static [&'static str] = &["On", "Off"];
+                    _serde::Deserializer::deserialize_enum(__deserializer,
+                        "OnOff", VARIANTS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<OnOff>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl OnOff {
+        fn as_bool(self)
+            ->
+                bool {
+            #[allow(non_exhaustive_omitted_patterns)]
+            match self { OnOff::On => true, _ => false, }
+        }
+        fn parse(input: &'_ str)
+            ->
+                Result<Self> {
+            match input.trim().to_lowercase().as_str() {
+                "on" | "an" => Ok(OnOff::On),
+                "off" | "aus" => Ok(OnOff::Off),
+                other =>
+                    Err(::anyhow::__private::must_use({
+                                let error =
+                                    ::anyhow::__private::format_err({
+                                            super let args = (&other,);
+                                            super let args = [format_argument::new_display(args.0)];
+                                            unsafe {
+                                                format_arguments::new(b"\x15Ung\xc3\xbcltiger Zustand: \xc0\x11. Erlaubt: on/off\x00",
+                                                    &args)
+                                            }
+                                        });
+                                error
+                            })),
+            }
+        }
+    }
+    struct TemperatureC(f32);
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for TemperatureC {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_tuple_field1_finish(f,
+                "TemperatureC", &&self.0)
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::marker::Copy for TemperatureC { }
+    #[attr = AutomaticallyDerived]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    unsafe impl ::core::clone::TrivialClone for TemperatureC { }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for TemperatureC {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                TemperatureC {
+            let _: ::core::clone::AssertParamIsClone<f32>;
+            *self
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for TemperatureC {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    _serde::Serializer::serialize_newtype_struct(__serializer,
+                        "TemperatureC", &self.0)
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for TemperatureC {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<TemperatureC>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        TemperatureC;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "tuple struct TemperatureC")
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_newtype_struct<__E>(self, __e: __E)
+                            -> _serde::__private228::Result<Self::Value, __E::Error>
+                            where
+                            __E: _serde::Deserializer<'de> {
+                            let __field0: f32 =
+                                match branch(<f32 as _serde::Deserialize>::deserialize(__e))
+                                    {
+                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                        return from_residual(residual),
+                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                        val,
+                                };
+                            _serde::__private228::Ok(TemperatureC(__field0))
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_seq<__A>(self, mut __seq: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::SeqAccess<'de> {
+                            let __field0 =
+                                match match branch(_serde::de::SeqAccess::next_element::<f32>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(0usize,
+                                                    &"tuple struct TemperatureC with 1 element")),
+                                };
+                            _serde::__private228::Ok(TemperatureC(__field0))
+                        }
+                    }
+                    _serde::Deserializer::deserialize_newtype_struct(__deserializer,
+                        "TemperatureC",
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<TemperatureC>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl TemperatureC {
+        fn new(value: f32)
+            ->
+                Option<Self> {
+            if range_inclusive_new(5.0, 35.0).contains(&value) {
+                Some(Self(value))
+            } else { None }
+        }
+    }
+    enum Command {
+        HeatingSet {
+                where_: RoomSelection,
+                target: TemperatureC,
+            },
+        HeatingEnabled {
+                where_: RoomSelection,
+                enabled: bool,
+            },
+        LightsSet {
+                where_: RoomSelection,
+                state: OnOff,
+            },
+        LightsToggle {
+                where_: RoomSelection,
+            },
+        SecurityLockAll,
+        SecurityUnlockAll,
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for Command {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            match self {
+                Command::HeatingSet {  where_: __self_0,  target: __self_1 }
+                    =>
+                    ::core::fmt::Formatter::debug_struct_field2_finish(f,
+                        "HeatingSet", "where_", __self_0, "target", &__self_1),
+                Command::HeatingEnabled {
+                     where_: __self_0,  enabled: __self_1 } =>
+                    ::core::fmt::Formatter::debug_struct_field2_finish(f,
+                        "HeatingEnabled", "where_", __self_0, "enabled", &__self_1),
+                Command::LightsSet {  where_: __self_0,  state: __self_1 } =>
+                    ::core::fmt::Formatter::debug_struct_field2_finish(f,
+                        "LightsSet", "where_", __self_0, "state", &__self_1),
+                Command::LightsToggle {  where_: __self_0 } =>
+                    ::core::fmt::Formatter::debug_struct_field1_finish(f,
+                        "LightsToggle", "where_", &__self_0),
+                Command::SecurityLockAll =>
+                    ::core::fmt::Formatter::write_str(f, "SecurityLockAll"),
+                Command::SecurityUnlockAll =>
+                    ::core::fmt::Formatter::write_str(f, "SecurityUnlockAll"),
+            }
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for Command {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                Command {
+            match self {
+                Command::HeatingSet {  where_: __self_0,  target: __self_1 }
+                    =>
+                    Command::HeatingSet {
+                        where_: ::core::clone::Clone::clone(__self_0),
+                        target: ::core::clone::Clone::clone(__self_1) },
+                Command::HeatingEnabled {
+                     where_: __self_0,  enabled: __self_1 } =>
+                    Command::HeatingEnabled {
+                        where_: ::core::clone::Clone::clone(__self_0),
+                        enabled: ::core::clone::Clone::clone(__self_1) },
+                Command::LightsSet {  where_: __self_0,  state: __self_1 } =>
+                    Command::LightsSet {
+                        where_: ::core::clone::Clone::clone(__self_0),
+                        state: ::core::clone::Clone::clone(__self_1) },
+                Command::LightsToggle {  where_: __self_0 } =>
+                    Command::LightsToggle {
+                        where_: ::core::clone::Clone::clone(__self_0) },
+                Command::SecurityLockAll => Command::SecurityLockAll,
+                Command::SecurityUnlockAll => Command::SecurityUnlockAll,
+            }
+        }
+    }
+    struct HeatingState {
+        enabled: bool,
+        target: TemperatureC,
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for HeatingState {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_struct_field2_finish(f,
+                "HeatingState", "enabled", &self.enabled, "target",
+                &&self.target)
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for HeatingState {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                HeatingState {
+            HeatingState {
+                enabled: ::core::clone::Clone::clone(&self.enabled),
+                target: ::core::clone::Clone::clone(&self.target) }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for HeatingState {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    let mut __serde_state =
+                        match branch(_serde::Serializer::serialize_struct(__serializer,
+                                    "HeatingState", false as usize + 1 + 1)) {
+                            Break {  0: residual } => #[allow(unreachable_code)]
+                                return from_residual(residual),
+                            Continue {  0: val } => #[allow(unreachable_code)]
+                                val,
+                        };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "enabled", &self.enabled)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "target", &self.target)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    _serde::ser::SerializeStruct::end(__serde_state)
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for HeatingState {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __field1, __ignore, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "field identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                1u64 => _serde::__private228::Ok(__Field::__field1),
+                                _ => _serde::__private228::Ok(__Field::__ignore),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "enabled" => _serde::__private228::Ok(__Field::__field0),
+                                "target" => _serde::__private228::Ok(__Field::__field1),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"enabled" => _serde::__private228::Ok(__Field::__field0),
+                                b"target" => _serde::__private228::Ok(__Field::__field1),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<HeatingState>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        HeatingState;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "struct HeatingState")
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_seq<__A>(self, mut __seq: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::SeqAccess<'de> {
+                            let __field0 =
+                                match match branch(_serde::de::SeqAccess::next_element::<bool>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(0usize,
+                                                    &"struct HeatingState with 2 elements")),
+                                };
+                            let __field1 =
+                                match match branch(_serde::de::SeqAccess::next_element::<TemperatureC>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(1usize,
+                                                    &"struct HeatingState with 2 elements")),
+                                };
+                            _serde::__private228::Ok(HeatingState {
+                                    enabled: __field0, target: __field1 })
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_map<__A>(self, mut __map: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::MapAccess<'de> {
+                            let mut __field0: _serde::__private228::Option<bool> =
+                                _serde::__private228::None;
+                            let mut __field1:
+                                    _serde::__private228::Option<TemperatureC> =
+                                _serde::__private228::None;
+                            loop {
+                                if let _serde::__private228::Some(__key) =
+                                        match branch(_serde::de::MapAccess::next_key::<__Field>(&mut __map))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        } {
+                                    match __key {
+                                        __Field::__field0 => {
+                                            if _serde::__private228::Option::is_some(&__field0) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("enabled"));
+                                            }
+                                            __field0 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<bool>(&mut __map))
+                                                        {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        __Field::__field1 => {
+                                            if _serde::__private228::Option::is_some(&__field1) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("target"));
+                                            }
+                                            __field1 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<TemperatureC>(&mut __map))
+                                                        {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        _ => {
+                                            let _ =
+                                                match branch(_serde::de::MapAccess::next_value::<_serde::de::IgnoredAny>(&mut __map))
+                                                    {
+                                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                                        return from_residual(residual),
+                                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                                        val,
+                                                };
+                                        }
+                                    }
+                                } else { break; }
+                            }
+                            let __field0 =
+                                match __field0 {
+                                    _serde::__private228::Some(__field0) => __field0,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("enabled"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            let __field1 =
+                                match __field1 {
+                                    _serde::__private228::Some(__field1) => __field1,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("target"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            _serde::__private228::Ok(HeatingState {
+                                    enabled: __field0, target: __field1 })
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const FIELDS: &'static [&'static str] =
+                        &["enabled", "target"];
+                    _serde::Deserializer::deserialize_struct(__deserializer,
+                        "HeatingState", FIELDS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<HeatingState>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl Default for HeatingState {
+        fn default()
+            -> Self { Self { enabled: false, target: TemperatureC(20.0) } }
+    }
+    struct LightState {
+        on: bool,
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for LightState {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_struct_field1_finish(f,
+                "LightState", "on", &&self.on)
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for LightState {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                LightState {
+            LightState { on: ::core::clone::Clone::clone(&self.on) }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for LightState {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    let mut __serde_state =
+                        match branch(_serde::Serializer::serialize_struct(__serializer,
+                                    "LightState", false as usize + 1)) {
+                            Break {  0: residual } => #[allow(unreachable_code)]
+                                return from_residual(residual),
+                            Continue {  0: val } => #[allow(unreachable_code)]
+                                val,
+                        };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "on", &self.on)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    _serde::ser::SerializeStruct::end(__serde_state)
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for LightState {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __ignore, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "field identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                _ => _serde::__private228::Ok(__Field::__ignore),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "on" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"on" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<LightState>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        LightState;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "struct LightState")
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_seq<__A>(self, mut __seq: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::SeqAccess<'de> {
+                            let __field0 =
+                                match match branch(_serde::de::SeqAccess::next_element::<bool>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(0usize,
+                                                    &"struct LightState with 1 element")),
+                                };
+                            _serde::__private228::Ok(LightState { on: __field0 })
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_map<__A>(self, mut __map: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::MapAccess<'de> {
+                            let mut __field0: _serde::__private228::Option<bool> =
+                                _serde::__private228::None;
+                            loop {
+                                if let _serde::__private228::Some(__key) =
+                                        match branch(_serde::de::MapAccess::next_key::<__Field>(&mut __map))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        } {
+                                    match __key {
+                                        __Field::__field0 => {
+                                            if _serde::__private228::Option::is_some(&__field0) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("on"));
+                                            }
+                                            __field0 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<bool>(&mut __map))
+                                                        {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        _ => {
+                                            let _ =
+                                                match branch(_serde::de::MapAccess::next_value::<_serde::de::IgnoredAny>(&mut __map))
+                                                    {
+                                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                                        return from_residual(residual),
+                                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                                        val,
+                                                };
+                                        }
+                                    }
+                                } else { break; }
+                            }
+                            let __field0 =
+                                match __field0 {
+                                    _serde::__private228::Some(__field0) => __field0,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("on"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            _serde::__private228::Ok(LightState { on: __field0 })
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const FIELDS: &'static [&'static str] = &["on"];
+                    _serde::Deserializer::deserialize_struct(__deserializer,
+                        "LightState", FIELDS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<LightState>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl Default for LightState {
+        fn default() -> Self { Self { on: false } }
+    }
+    struct HeatingSystem {
+        per_room: HashMap<Room, HeatingState>,
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for HeatingSystem {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_struct_field1_finish(f,
+                "HeatingSystem", "per_room", &&self.per_room)
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for HeatingSystem {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                HeatingSystem {
+            HeatingSystem {
+                per_room: ::core::clone::Clone::clone(&self.per_room) }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for HeatingSystem {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    let mut __serde_state =
+                        match branch(_serde::Serializer::serialize_struct(__serializer,
+                                    "HeatingSystem", false as usize + 1)) {
+                            Break {  0: residual } => #[allow(unreachable_code)]
+                                return from_residual(residual),
+                            Continue {  0: val } => #[allow(unreachable_code)]
+                                val,
+                        };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "per_room", &self.per_room)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    _serde::ser::SerializeStruct::end(__serde_state)
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for HeatingSystem {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __ignore, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "field identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                _ => _serde::__private228::Ok(__Field::__ignore),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "per_room" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"per_room" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<HeatingSystem>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        HeatingSystem;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "struct HeatingSystem")
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_seq<__A>(self, mut __seq: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::SeqAccess<'de> {
+                            let __field0 =
+                                match match branch(_serde::de::SeqAccess::next_element::<HashMap<Room,
+                                                    HeatingState>>(&mut __seq)) {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(0usize,
+                                                    &"struct HeatingSystem with 1 element")),
+                                };
+                            _serde::__private228::Ok(HeatingSystem { per_room: __field0
+                                    })
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_map<__A>(self, mut __map: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::MapAccess<'de> {
+                            let mut __field0:
+                                    _serde::__private228::Option<HashMap<Room, HeatingState>> =
+                                _serde::__private228::None;
+                            loop {
+                                if let _serde::__private228::Some(__key) =
+                                        match branch(_serde::de::MapAccess::next_key::<__Field>(&mut __map))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        } {
+                                    match __key {
+                                        __Field::__field0 => {
+                                            if _serde::__private228::Option::is_some(&__field0) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("per_room"));
+                                            }
+                                            __field0 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<HashMap<Room,
+                                                                    HeatingState>>(&mut __map)) {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        _ => {
+                                            let _ =
+                                                match branch(_serde::de::MapAccess::next_value::<_serde::de::IgnoredAny>(&mut __map))
+                                                    {
+                                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                                        return from_residual(residual),
+                                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                                        val,
+                                                };
+                                        }
+                                    }
+                                } else { break; }
+                            }
+                            let __field0 =
+                                match __field0 {
+                                    _serde::__private228::Some(__field0) => __field0,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("per_room"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            _serde::__private228::Ok(HeatingSystem { per_room: __field0
+                                    })
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const FIELDS: &'static [&'static str] = &["per_room"];
+                    _serde::Deserializer::deserialize_struct(__deserializer,
+                        "HeatingSystem", FIELDS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<HeatingSystem>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl HeatingSystem {
+        fn new_default()
+            ->
+                Self {
+            let per_room =
+                Room::ALL.into_iter().map(|r|
+                            (r, HeatingState::default())).collect();
+            Self { per_room }
+        }
+        fn set_target(&mut self, where_: RoomSelection,
+            target:
+                TemperatureC) {
+            {
+                let _t =
+                    match into_iter(where_.iter()) {
+                        mut iter =>
+                            loop {
+                                match next(&mut iter) {
+                                    None {} => break,
+                                    Some {  0: room } => {
+                                        if let Some(state) = self.per_room.get_mut(&room) {
+                                            state.enabled = true;
+                                            state.target = target;
+                                        }
+                                    }
+                                }
+                            },
+                    };
+                _t
+            }
+        }
+        fn set_enabled(&mut self, where_: RoomSelection,
+            enabled:
+                bool) {
+            {
+                let _t =
+                    match into_iter(where_.iter()) {
+                        mut iter =>
+                            loop {
+                                match next(&mut iter) {
+                                    None {} => break,
+                                    Some {  0: room } => {
+                                        if let Some(state) = self.per_room.get_mut(&room) {
+                                            state.enabled = enabled;
+                                        }
+                                    }
+                                }
+                            },
+                    };
+                _t
+            }
+        }
+        fn status_lines(&self)
+            ->
+                Vec<String> {
+            Room::ALL.into_iter().filter_map(|r|
+                            self.per_room.get(&r).map(|s|
+                                    (r,
+                                        s))).map(|(room, state)|
+                        {
+                            let label =
+                                ::alloc::__export::must_use({
+                                        ::alloc::fmt::format({
+                                                super let args = (&room,);
+                                                super let args = [format_argument::new_display(args.0)];
+                                                unsafe {
+                                                    format_arguments::new(b"\x08Heizung \xc0\x01:\x00", &args)
+                                                }
+                                            })
+                                    });
+                            let on_off = if state.enabled { "AN" } else { "AUS" };
+                            ::alloc::__export::must_use({
+                                    ::alloc::fmt::format({
+                                            super let args =
+                                                (&label, &on_off, &state.target.0, &STATUS_LABEL_WIDTH);
+                                            super let args =
+                                                [format_argument::new_display(args.0),
+                                                        format_argument::from_usize(args.3),
+                                                        format_argument::new_display(args.1),
+                                                        format_argument::new_display(args.2)];
+                                            unsafe {
+                                                format_arguments::new(b"\xd3.\x00\x00\x08\x01\x00\xc8\x02\x00\x08 (Ziel: \xc5 \x00\x00p\x01\x00\x04\xc2\xb0C)\x00",
+                                                    &args)
+                                            }
+                                        })
+                                })
+                        }).collect()
+        }
+    }
+    struct LightingSystem {
+        per_room: HashMap<Room, LightState>,
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for LightingSystem {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_struct_field1_finish(f,
+                "LightingSystem", "per_room", &&self.per_room)
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for LightingSystem {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                LightingSystem {
+            LightingSystem {
+                per_room: ::core::clone::Clone::clone(&self.per_room) }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for LightingSystem {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    let mut __serde_state =
+                        match branch(_serde::Serializer::serialize_struct(__serializer,
+                                    "LightingSystem", false as usize + 1)) {
+                            Break {  0: residual } => #[allow(unreachable_code)]
+                                return from_residual(residual),
+                            Continue {  0: val } => #[allow(unreachable_code)]
+                                val,
+                        };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "per_room", &self.per_room)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    _serde::ser::SerializeStruct::end(__serde_state)
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for LightingSystem {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __ignore, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "field identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                _ => _serde::__private228::Ok(__Field::__ignore),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "per_room" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"per_room" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<LightingSystem>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        LightingSystem;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "struct LightingSystem")
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_seq<__A>(self, mut __seq: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::SeqAccess<'de> {
+                            let __field0 =
+                                match match branch(_serde::de::SeqAccess::next_element::<HashMap<Room,
+                                                    LightState>>(&mut __seq)) {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(0usize,
+                                                    &"struct LightingSystem with 1 element")),
+                                };
+                            _serde::__private228::Ok(LightingSystem { per_room: __field0
+                                    })
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_map<__A>(self, mut __map: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::MapAccess<'de> {
+                            let mut __field0:
+                                    _serde::__private228::Option<HashMap<Room, LightState>> =
+                                _serde::__private228::None;
+                            loop {
+                                if let _serde::__private228::Some(__key) =
+                                        match branch(_serde::de::MapAccess::next_key::<__Field>(&mut __map))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        } {
+                                    match __key {
+                                        __Field::__field0 => {
+                                            if _serde::__private228::Option::is_some(&__field0) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("per_room"));
+                                            }
+                                            __field0 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<HashMap<Room,
+                                                                    LightState>>(&mut __map)) {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        _ => {
+                                            let _ =
+                                                match branch(_serde::de::MapAccess::next_value::<_serde::de::IgnoredAny>(&mut __map))
+                                                    {
+                                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                                        return from_residual(residual),
+                                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                                        val,
+                                                };
+                                        }
+                                    }
+                                } else { break; }
+                            }
+                            let __field0 =
+                                match __field0 {
+                                    _serde::__private228::Some(__field0) => __field0,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("per_room"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            _serde::__private228::Ok(LightingSystem { per_room: __field0
+                                    })
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const FIELDS: &'static [&'static str] = &["per_room"];
+                    _serde::Deserializer::deserialize_struct(__deserializer,
+                        "LightingSystem", FIELDS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<LightingSystem>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl LightingSystem {
+        fn new_default()
+            ->
+                Self {
+            let per_room =
+                Room::ALL.into_iter().map(|r|
+                            (r, LightState::default())).collect();
+            Self { per_room }
+        }
+        fn set(&mut self, where_: RoomSelection,
+            state:
+                OnOff) {
+            let on = state.as_bool();
+            {
+                let _t =
+                    match into_iter(where_.iter()) {
+                        mut iter =>
+                            loop {
+                                match next(&mut iter) {
+                                    None {} => break,
+                                    Some {  0: room } => {
+                                        if let Some(light) = self.per_room.get_mut(&room) {
+                                            light.on = on;
+                                        }
+                                    }
+                                }
+                            },
+                    };
+                _t
+            }
+        }
+        fn toggle(&mut self,
+            where_:
+                RoomSelection) {
+            {
+                let _t =
+                    match into_iter(where_.iter()) {
+                        mut iter =>
+                            loop {
+                                match next(&mut iter) {
+                                    None {} => break,
+                                    Some {  0: room } => {
+                                        if let Some(light) = self.per_room.get_mut(&room) {
+                                            light.on = !light.on;
+                                        }
+                                    }
+                                }
+                            },
+                    };
+                _t
+            }
+        }
+        fn status_lines(&self)
+            ->
+                Vec<String> {
+            Room::ALL.into_iter().filter_map(|r|
+                            self.per_room.get(&r).map(|s|
+                                    (r,
+                                        s))).map(|(room, state)|
+                        {
+                            let label =
+                                ::alloc::__export::must_use({
+                                        ::alloc::fmt::format({
+                                                super let args = (&room,);
+                                                super let args = [format_argument::new_display(args.0)];
+                                                unsafe {
+                                                    format_arguments::new(b"\x06Licht \xc0\x01:\x00", &args)
+                                                }
+                                            })
+                                    });
+                            let on_off = if state.on { "AN" } else { "AUS" };
+                            ::alloc::__export::must_use({
+                                    ::alloc::fmt::format({
+                                            super let args = (&label, &on_off, &STATUS_LABEL_WIDTH);
+                                            super let args =
+                                                [format_argument::new_display(args.0),
+                                                        format_argument::from_usize(args.2),
+                                                        format_argument::new_display(args.1)];
+                                            unsafe {
+                                                format_arguments::new(b"\xd3.\x00\x00\x08\x01\x00\xc8\x02\x00\x00",
+                                                    &args)
+                                            }
+                                        })
+                                })
+                        }).collect()
+        }
+    }
+    struct SecuritySystem {
+        locked: bool,
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for SecuritySystem {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_struct_field1_finish(f,
+                "SecuritySystem", "locked", &&self.locked)
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for SecuritySystem {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                SecuritySystem {
+            SecuritySystem { locked: ::core::clone::Clone::clone(&self.locked)
+                }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for SecuritySystem {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    let mut __serde_state =
+                        match branch(_serde::Serializer::serialize_struct(__serializer,
+                                    "SecuritySystem", false as usize + 1)) {
+                            Break {  0: residual } => #[allow(unreachable_code)]
+                                return from_residual(residual),
+                            Continue {  0: val } => #[allow(unreachable_code)]
+                                val,
+                        };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "locked", &self.locked)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    _serde::ser::SerializeStruct::end(__serde_state)
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for SecuritySystem {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __ignore, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "field identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                _ => _serde::__private228::Ok(__Field::__ignore),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "locked" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"locked" => _serde::__private228::Ok(__Field::__field0),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<SecuritySystem>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        SecuritySystem;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "struct SecuritySystem")
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_seq<__A>(self, mut __seq: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::SeqAccess<'de> {
+                            let __field0 =
+                                match match branch(_serde::de::SeqAccess::next_element::<bool>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(0usize,
+                                                    &"struct SecuritySystem with 1 element")),
+                                };
+                            _serde::__private228::Ok(SecuritySystem { locked: __field0
+                                    })
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_map<__A>(self, mut __map: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::MapAccess<'de> {
+                            let mut __field0: _serde::__private228::Option<bool> =
+                                _serde::__private228::None;
+                            loop {
+                                if let _serde::__private228::Some(__key) =
+                                        match branch(_serde::de::MapAccess::next_key::<__Field>(&mut __map))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        } {
+                                    match __key {
+                                        __Field::__field0 => {
+                                            if _serde::__private228::Option::is_some(&__field0) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("locked"));
+                                            }
+                                            __field0 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<bool>(&mut __map))
+                                                        {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        _ => {
+                                            let _ =
+                                                match branch(_serde::de::MapAccess::next_value::<_serde::de::IgnoredAny>(&mut __map))
+                                                    {
+                                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                                        return from_residual(residual),
+                                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                                        val,
+                                                };
+                                        }
+                                    }
+                                } else { break; }
+                            }
+                            let __field0 =
+                                match __field0 {
+                                    _serde::__private228::Some(__field0) => __field0,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("locked"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            _serde::__private228::Ok(SecuritySystem { locked: __field0
+                                    })
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const FIELDS: &'static [&'static str] = &["locked"];
+                    _serde::Deserializer::deserialize_struct(__deserializer,
+                        "SecuritySystem", FIELDS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<SecuritySystem>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl SecuritySystem {
+        fn new_default() -> Self { Self { locked: false } }
+        fn lock_all(&mut self) { self.locked = true; }
+        fn unlock_all(&mut self) { self.locked = false; }
+        fn status_line(&self)
+            ->
+                String {
+            if self.locked {
+                "Sicherheit: Haus ist VERRIEGELT".to_string()
+            } else { "Sicherheit: Haus ist ENTRIEGELT".to_string() }
+        }
+    }
+    struct SmartHome {
+        heating: HeatingSystem,
+        lighting: LightingSystem,
+        security: SecuritySystem,
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::fmt::Debug for SmartHome {
+        #[attr = Inline(Hint)]
+        fn fmt(&self, f: &'_ mut ::core::fmt::Formatter<'_>)
+            ->
+                ::core::fmt::Result {
+            ::core::fmt::Formatter::debug_struct_field3_finish(f, "SmartHome",
+                "heating", &self.heating, "lighting", &self.lighting,
+                "security", &&self.security)
+        }
+    }
+    #[attr = AutomaticallyDerived]
+    impl ::core::clone::Clone for SmartHome {
+        #[attr = Inline(Hint)]
+        fn clone(&self)
+            ->
+                SmartHome {
+            SmartHome {
+                heating: ::core::clone::Clone::clone(&self.heating),
+                lighting: ::core::clone::Clone::clone(&self.lighting),
+                security: ::core::clone::Clone::clone(&self.security) }
+        }
+    }
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl _serde::Serialize for SmartHome {
+                fn serialize<__S>(&self, __serializer: __S)
+                    -> _serde::__private228::Result<__S::Ok, __S::Error> where
+                    __S: _serde::Serializer {
+                    let mut __serde_state =
+                        match branch(_serde::Serializer::serialize_struct(__serializer,
+                                    "SmartHome", false as usize + 1 + 1 + 1)) {
+                            Break {  0: residual } => #[allow(unreachable_code)]
+                                return from_residual(residual),
+                            Continue {  0: val } => #[allow(unreachable_code)]
+                                val,
+                        };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "heating", &self.heating)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "lighting", &self.lighting)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    match branch(_serde::ser::SerializeStruct::serialize_field(&mut __serde_state,
+                                "security", &self.security)) {
+                        Break {  0: residual } => #[allow(unreachable_code)]
+                            return from_residual(residual),
+                        Continue {  0: val } => #[allow(unreachable_code)]
+                            val,
+                    };
+                    _serde::ser::SerializeStruct::end(__serde_state)
+                }
+            }
+        };
+    #[allow(non_upper_case_globals, unused_attributes, unused_qualifications,
+    clippy :: absolute_paths,)]
+    #[attr = Doc(DocAttribute {aliases: [],
+    inline: [],
+    cfg: [],
+    auto_cfg: [],
+    auto_cfg_change: [],
+    test_attrs: []})]
+    const _: () =
+        {
+            #[allow(unused_extern_crates, clippy :: useless_attribute)]
+            extern crate serde as _serde;
+            #[attr = AutomaticallyDerived]
+            impl <'de> _serde::Deserialize<'de> for SmartHome {
+                fn deserialize<__D>(__deserializer: __D)
+                    -> _serde::__private228::Result<Self, __D::Error> where
+                    __D: _serde::Deserializer<'de> {
+                    #[allow(non_camel_case_types)]
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    enum __Field { __field0, __field1, __field2, __ignore, }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __FieldVisitor;
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __FieldVisitor {
+                        type
+                        Value
+                        =
+                        __Field;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "field identifier")
+                        }
+                        fn visit_u64<__E>(self, __value: u64)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                0u64 => _serde::__private228::Ok(__Field::__field0),
+                                1u64 => _serde::__private228::Ok(__Field::__field1),
+                                2u64 => _serde::__private228::Ok(__Field::__field2),
+                                _ => _serde::__private228::Ok(__Field::__ignore),
+                            }
+                        }
+                        fn visit_str<__E>(self, __value: &'_ str)
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                "heating" => _serde::__private228::Ok(__Field::__field0),
+                                "lighting" => _serde::__private228::Ok(__Field::__field1),
+                                "security" => _serde::__private228::Ok(__Field::__field2),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                        fn visit_bytes<__E>(self, __value: &'_ [u8])
+                            -> _serde::__private228::Result<Self::Value, __E> where
+                            __E: _serde::de::Error {
+                            match __value {
+                                b"heating" => _serde::__private228::Ok(__Field::__field0),
+                                b"lighting" => _serde::__private228::Ok(__Field::__field1),
+                                b"security" => _serde::__private228::Ok(__Field::__field2),
+                                _ => { _serde::__private228::Ok(__Field::__ignore) }
+                            }
+                        }
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::Deserialize<'de> for __Field {
+                        #[attr = Inline(Hint)]
+                        fn deserialize<__D>(__deserializer: __D)
+                            -> _serde::__private228::Result<Self, __D::Error> where
+                            __D: _serde::Deserializer<'de> {
+                            _serde::Deserializer::deserialize_identifier(__deserializer,
+                                __FieldVisitor)
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    struct __Visitor<'de> {
+                        marker: _serde::__private228::PhantomData<SmartHome>,
+                        lifetime: _serde::__private228::PhantomData<&'de ()>,
+                    }
+                    #[attr = AutomaticallyDerived]
+                    impl <'de> _serde::de::Visitor<'de> for __Visitor<'de> {
+                        type
+                        Value
+                        =
+                        SmartHome;
+                        fn expecting(&self,
+                            __formatter: &'_ mut _serde::__private228::Formatter<'_>)
+                            ->
+                                _serde::__private228::fmt::Result {
+                            _serde::__private228::Formatter::write_str(__formatter,
+                                "struct SmartHome")
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_seq<__A>(self, mut __seq: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::SeqAccess<'de> {
+                            let __field0 =
+                                match match branch(_serde::de::SeqAccess::next_element::<HeatingSystem>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(0usize,
+                                                    &"struct SmartHome with 3 elements")),
+                                };
+                            let __field1 =
+                                match match branch(_serde::de::SeqAccess::next_element::<LightingSystem>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(1usize,
+                                                    &"struct SmartHome with 3 elements")),
+                                };
+                            let __field2 =
+                                match match branch(_serde::de::SeqAccess::next_element::<SecuritySystem>(&mut __seq))
+                                        {
+                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                            return from_residual(residual),
+                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                            val,
+                                    } {
+                                    _serde::__private228::Some(__value) => __value,
+                                    _serde::__private228::None =>
+                                        return _serde::__private228::Err(_serde::de::Error::invalid_length(2usize,
+                                                    &"struct SmartHome with 3 elements")),
+                                };
+                            _serde::__private228::Ok(SmartHome {
+                                    heating: __field0, lighting: __field1, security: __field2 })
+                        }
+                        #[attr = Inline(Hint)]
+                        fn visit_map<__A>(self, mut __map: __A)
+                            -> _serde::__private228::Result<Self::Value, __A::Error>
+                            where
+                            __A: _serde::de::MapAccess<'de> {
+                            let mut __field0:
+                                    _serde::__private228::Option<HeatingSystem> =
+                                _serde::__private228::None;
+                            let mut __field1:
+                                    _serde::__private228::Option<LightingSystem> =
+                                _serde::__private228::None;
+                            let mut __field2:
+                                    _serde::__private228::Option<SecuritySystem> =
+                                _serde::__private228::None;
+                            loop {
+                                if let _serde::__private228::Some(__key) =
+                                        match branch(_serde::de::MapAccess::next_key::<__Field>(&mut __map))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        } {
+                                    match __key {
+                                        __Field::__field0 => {
+                                            if _serde::__private228::Option::is_some(&__field0) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("heating"));
+                                            }
+                                            __field0 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<HeatingSystem>(&mut __map))
+                                                        {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        __Field::__field1 => {
+                                            if _serde::__private228::Option::is_some(&__field1) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("lighting"));
+                                            }
+                                            __field1 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<LightingSystem>(&mut __map))
+                                                        {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        __Field::__field2 => {
+                                            if _serde::__private228::Option::is_some(&__field2) {
+                                                return _serde::__private228::Err(<__A::Error as
+                                                                _serde::de::Error>::duplicate_field("security"));
+                                            }
+                                            __field2 =
+                                                _serde::__private228::Some(match branch(_serde::de::MapAccess::next_value::<SecuritySystem>(&mut __map))
+                                                        {
+                                                        Break {  0: residual } => #[allow(unreachable_code)]
+                                                            return from_residual(residual),
+                                                        Continue {  0: val } => #[allow(unreachable_code)]
+                                                            val,
+                                                    });
+                                        }
+                                        _ => {
+                                            let _ =
+                                                match branch(_serde::de::MapAccess::next_value::<_serde::de::IgnoredAny>(&mut __map))
+                                                    {
+                                                    Break {  0: residual } => #[allow(unreachable_code)]
+                                                        return from_residual(residual),
+                                                    Continue {  0: val } => #[allow(unreachable_code)]
+                                                        val,
+                                                };
+                                        }
+                                    }
+                                } else { break; }
+                            }
+                            let __field0 =
+                                match __field0 {
+                                    _serde::__private228::Some(__field0) => __field0,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("heating"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            let __field1 =
+                                match __field1 {
+                                    _serde::__private228::Some(__field1) => __field1,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("lighting"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            let __field2 =
+                                match __field2 {
+                                    _serde::__private228::Some(__field2) => __field2,
+                                    _serde::__private228::None =>
+                                        match branch(_serde::__private228::de::missing_field("security"))
+                                            {
+                                            Break {  0: residual } => #[allow(unreachable_code)]
+                                                return from_residual(residual),
+                                            Continue {  0: val } => #[allow(unreachable_code)]
+                                                val,
+                                        },
+                                };
+                            _serde::__private228::Ok(SmartHome {
+                                    heating: __field0, lighting: __field1, security: __field2 })
+                        }
+                    }
+                    #[attr = Doc(DocAttribute {aliases: [],
+                    inline: [],
+                    cfg: [],
+                    auto_cfg: [],
+                    auto_cfg_change: [],
+                    test_attrs: []})]
+                    const FIELDS: &'static [&'static str] =
+                        &["heating", "lighting", "security"];
+                    _serde::Deserializer::deserialize_struct(__deserializer,
+                        "SmartHome", FIELDS,
+                        __Visitor {
+                            marker: _serde::__private228::PhantomData::<SmartHome>,
+                            lifetime: _serde::__private228::PhantomData })
+                }
+            }
+        };
+    impl SmartHome {
+        fn new_default()
+            ->
+                Self {
+            Self {
+                heating: HeatingSystem::new_default(),
+                lighting: LightingSystem::new_default(),
+                security: SecuritySystem::new_default() }
+        }
+        fn apply(&mut self,
+            cmd:
+                Command) {
+            match cmd {
+                Command::HeatingSet {  where_,  target } =>
+                    self.heating.set_target(where_, target),
+                Command::HeatingEnabled {  where_,  enabled } => {
+                    self.heating.set_enabled(where_, enabled)
+                }
+                Command::LightsSet {  where_,  state } =>
+                    self.lighting.set(where_, state),
+                Command::LightsToggle {  where_ } =>
+                    self.lighting.toggle(where_),
+                Command::SecurityLockAll => self.security.lock_all(),
+                Command::SecurityUnlockAll => self.security.unlock_all(),
+            }
+        }
+        fn render_status(&self)
+            ->
+                String {
+            let mut lines = Vec::new();
+            lines.push("=== SmartHome Status ===".to_string());
+            lines.push(" ".to_string());
+            lines.push(self.security.status_line());
+            lines.push("---".to_string());
+            lines.extend(self.heating.status_lines());
+            lines.push("---".to_string());
+            lines.extend(self.lighting.status_lines());
+            lines.join("\n")
+        }
+    }
+}
+mod storage {
+    use crate::domain::SmartHome;
+    use ::{};
+    use anyhow::Context;
+    use anyhow::Result;
+    use std::fs;
+    use std::path::Path;
+    const STATE_FILE: &'_ str = "smarthome_state.json";
+    fn load_or_default()
+        ->
+            Result<SmartHome> {
+        if !Path::new(STATE_FILE).exists() {
+            return Ok(SmartHome::new_default());
+        }
+        let json =
+            match branch(fs::read_to_string(STATE_FILE).context("Konnte State-Datei nicht lesen"))
+                {
+                Break {  0: residual } => #[allow(unreachable_code)]
+                    return from_residual(residual),
+                Continue {  0: val } => #[allow(unreachable_code)]
+                    val,
+            };
+        let home: SmartHome =
+            match branch(serde_json::from_str(&json).context("State-Datei ist ung\u{fc}ltiges JSON"))
+                {
+                Break {  0: residual } => #[allow(unreachable_code)]
+                    return from_residual(residual),
+                Continue {  0: val } => #[allow(unreachable_code)]
+                    val,
+            };
+        Ok(home)
+    }
+    fn save(home: &'_ SmartHome)
+        ->
+            Result<()> {
+        let json =
+            match branch(serde_json::to_string_pretty(home).context("Konnte State nicht serialisieren"))
+                {
+                Break {  0: residual } => #[allow(unreachable_code)]
+                    return from_residual(residual),
+                Continue {  0: val } => #[allow(unreachable_code)]
+                    val,
+            };
+        match branch(fs::write(STATE_FILE,
+                        json).context("Konnte State-Datei nicht schreiben")) {
+            Break {  0: residual } => #[allow(unreachable_code)]
+                return from_residual(residual),
+            Continue {  0: val } => #[allow(unreachable_code)]
+                val,
+        };
+        Ok(())
+    }
+}
+use crate::cli::SessionOutcome;
+use anyhow::Result;
+fn main()
+    ->
+        Result<()> {
+    let mut home =
+        match branch(storage::load_or_default()) {
+            Break {  0: residual } => #[allow(unreachable_code)]
+                return from_residual(residual),
+            Continue {  0: val } => #[allow(unreachable_code)]
+                val,
+        };
+    cli::print_welcome();
+    {
+        ::std::io::_print({
+                super let args = (&home.render_status(),);
+                super let args = [format_argument::new_display(args.0)];
+                unsafe { format_arguments::new(b"\xc0\x01\n\x00", &args) }
+            });
+    };
+    { ::std::io::_print(format_arguments::from_str("\n")); };
+    loop {
+        match cli::run_repl_iteration(&mut home) {
+            Ok(SessionOutcome::Continue) => {
+                match branch(storage::save(&home)) {
+                    Break {  0: residual } => #[allow(unreachable_code)]
+                        return from_residual(residual),
+                    Continue {  0: val } => #[allow(unreachable_code)]
+                        val,
+                };
+            }
+            Ok(SessionOutcome::Exit) => {
+                match branch(storage::save(&home)) {
+                    Break {  0: residual } => #[allow(unreachable_code)]
+                        return from_residual(residual),
+                    Continue {  0: val } => #[allow(unreachable_code)]
+                        val,
+                };
+                {
+                    ::std::io::_print(format_arguments::from_str("SmartHome Controller beendet.\n"));
+                };
+                break;
+            }
+            Err(err) => {
+                {
+                    ::std::io::_eprint({
+                            super let args = (&err,);
+                            super let args = [format_argument::new_display(args.0)];
+                            unsafe {
+                                format_arguments::new(b"\x08Fehler: \xc0\x01\n\x00", &args)
+                            }
+                        });
+                };
+            }
+        }
+    }
+    Ok(())
+}

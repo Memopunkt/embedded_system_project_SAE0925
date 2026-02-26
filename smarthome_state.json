@@ -1,0 +1,41 @@
+{
+  "heating": {
+    "per_room": {
+      "Bath": {
+        "enabled": true,
+        "target": 20.0
+      },
+      "BedRoom": {
+        "enabled": true,
+        "target": 20.0
+      },
+      "Kitchen": {
+        "enabled": true,
+        "target": 22.0
+      },
+      "LivingRoom": {
+        "enabled": true,
+        "target": 20.0
+      }
+    }
+  },
+  "lighting": {
+    "per_room": {
+      "BedRoom": {
+        "on": true
+      },
+      "Bath": {
+        "on": true
+      },
+      "Kitchen": {
+        "on": false
+      },
+      "LivingRoom": {
+        "on": true
+      }
+    }
+  },
+  "security": {
+    "locked": true
+  }
+}
