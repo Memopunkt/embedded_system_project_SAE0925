@@ -1,6 +1,4 @@
 /target
-**/*.rs.bk
-Cargo.lock
-.DS_Store
-.idea
-.vscode
+smarthome_state.json
+smarthome_state.json.bak
+smarthome_state.json.tmp

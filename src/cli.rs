@@ -1,9 +1,9 @@
-use crate::domain::{Command, OnOff, RoomSelection, SmartHome, TemperatureC};
+use crate::domain::{Command, OnOff, RoomSelection, Scene, SmartHome, TemperatureC};
 use anyhow::{anyhow, Result};
 use std::io::{self, Write};
 
 pub enum SessionOutcome {
-    Continue,
+    Continue { changed: bool },
     Exit,
 }
 
@@ -26,6 +26,12 @@ pub fn print_help() {
 
     println!("security lock");
     println!("security unlock\n");
+
+    println!("scene <night|away|morning>");
+    println!("  Beispiel: scene night");
+    println!("  night: Licht AUS, Heizung AN, Security LOCK");
+    println!("  away:  Licht AUS, Heizung AUS, Security LOCK");
+    println!("  morning: Licht AN, Heizung AN, Security UNLOCK\n");
 
     println!("help");
     println!("  Zeigt diese Hilfe");
@@ -57,7 +63,7 @@ pub fn run_repl_iteration(home: &mut SmartHome) -> Result<SessionOutcome> {
 
     let trimmed = line.trim();
     if trimmed.is_empty() {
-        return Ok(SessionOutcome::Continue);
+        return Ok(SessionOutcome::Continue { changed: false });
     }
 
     if trimmed.eq_ignore_ascii_case("exit") || trimmed.eq_ignore_ascii_case("quit") {
@@ -66,19 +72,19 @@ pub fn run_repl_iteration(home: &mut SmartHome) -> Result<SessionOutcome> {
 
     if trimmed.eq_ignore_ascii_case("help") {
         print_help();
-        return Ok(SessionOutcome::Continue);
+        return Ok(SessionOutcome::Continue { changed: false });
     }
 
     if trimmed.eq_ignore_ascii_case("status") {
         println!("{}", home.render_status());
-        return Ok(SessionOutcome::Continue);
+        return Ok(SessionOutcome::Continue { changed: false });
     }
 
     let cmd = parse_command(trimmed)?;
-    home.apply(cmd);
+    let changed = home.apply(cmd);
     println!("{}", home.render_status());
 
-    Ok(SessionOutcome::Continue)
+    Ok(SessionOutcome::Continue { changed })
 }
 
 fn parse_command(input: &str) -> Result<Command> {
@@ -92,6 +98,7 @@ fn parse_command(input: &str) -> Result<Command> {
         "heating" => parse_heating(&parts),
         "lights" => parse_lights(&parts),
         "security" => parse_security(&parts),
+        "scene" => parse_scene(&parts),
         _ => Err(anyhow!(
             "Unbekannter Command. Nutze 'help' für alle verfügbaren Befehle."
         )),
@@ -183,4 +190,13 @@ fn parse_security(parts: &[&str]) -> Result<Command> {
         "unlock" => Ok(Command::SecurityUnlockAll),
         _ => Err(anyhow!("Unbekannter security-Befehl. Nutze: lock/unlock")),
     }
+}
+
+fn parse_scene(parts: &[&str]) -> Result<Command> {
+    if parts.len() != 2 {
+        return Err(anyhow!("Ungültige Eingabe. Beispiel: scene night"));
+    }
+    let scene = Scene::parse(parts[1])
+        .ok_or_else(|| anyhow!("Unbekannte Szene. Erlaubt: night | away | morning"))?;
+    Ok(Command::Scene(scene))
 }
