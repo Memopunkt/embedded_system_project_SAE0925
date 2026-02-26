@@ -96,6 +96,27 @@ impl TemperatureC {
     }
 }
 
+// Einführung von Szenen (Scene-Funktion).
+// Eine Szene fasst mehrere Aktionen zusammen (z.B. Night, Away, Morning),
+// um typische SmartHome-Zustände schnell zu aktivieren.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
+pub enum Scene {
+    Night,
+    Away,
+    Morning,
+}
+
+impl Scene {
+    pub fn parse(input: &str) -> Option<Self> {
+        match input.trim().to_lowercase().as_str() {
+            "night" | "nacht" => Some(Scene::Night),
+            "away" | "abwesend" => Some(Scene::Away),
+            "morning" | "morgen" => Some(Scene::Morning),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Command {
     HeatingSet {
@@ -115,6 +136,8 @@ pub enum Command {
     },
     SecurityLockAll,
     SecurityUnlockAll,
+    // Neue Funktion: Szenensteuerung
+    Scene(Scene),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -275,18 +298,41 @@ impl SmartHome {
         }
     }
 
-    pub fn apply(&mut self, cmd: Command) {
-        match cmd {
-            Command::HeatingSet { where_, target } => self.heating.set_target(where_, target),
-            Command::HeatingEnabled { where_, enabled } => {
-                self.heating.set_enabled(where_, enabled)
+// Implementierung der Szenenlogik.
+// Jede Szene setzt mehrere Systeme gleichzeitig (Licht, Heizung, Sicherheit).
+// Beispiel: "Night" -> Licht aus, Heizung an, Haus verriegeln.
+pub fn apply(&mut self, cmd: Command) -> bool {
+    match cmd {
+        Command::HeatingSet { where_, target } => self.heating.set_target(where_, target),
+        Command::HeatingEnabled { where_, enabled } => self.heating.set_enabled(where_, enabled),
+        Command::LightsSet { where_, state } => self.lighting.set(where_, state),
+        Command::LightsToggle { where_ } => self.lighting.toggle(where_),
+        Command::SecurityLockAll => self.security.lock_all(),
+        Command::SecurityUnlockAll => self.security.unlock_all(),
+
+        Command::Scene(scene) => {
+            match scene {
+                Scene::Night => {
+                    self.lighting.set(RoomSelection::All, OnOff::Off);
+                    self.heating.set_enabled(RoomSelection::All, true);
+                    self.security.lock_all();
+                }
+                Scene::Away => {
+                    self.lighting.set(RoomSelection::All, OnOff::Off);
+                    self.heating.set_enabled(RoomSelection::All, false);
+                    self.security.lock_all();
+                }
+                Scene::Morning => {
+                    self.lighting.set(RoomSelection::All, OnOff::On);
+                    self.heating.set_enabled(RoomSelection::All, true);
+                    self.security.unlock_all();
+                }
             }
-            Command::LightsSet { where_, state } => self.lighting.set(where_, state),
-            Command::LightsToggle { where_ } => self.lighting.toggle(where_),
-            Command::SecurityLockAll => self.security.lock_all(),
-            Command::SecurityUnlockAll => self.security.unlock_all(),
         }
     }
+
+    true
+}
 
     pub fn render_status(&self) -> String {
         let mut lines = Vec::new();
@@ -297,5 +343,52 @@ impl SmartHome {
         lines.push("---".to_string());
         lines.extend(self.lighting.status_lines());
         lines.join("\n")
+    }
+}
+
+// Einfache Unit-Tests für zentrale Funktionen (Temperaturvalidierung, Szenen, Licht).
+// Dient zur Sicherstellung der korrekten Logik.
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn temperature_validation() {
+        assert!(TemperatureC::new(4.0).is_none());
+        assert!(TemperatureC::new(20.0).is_some());
+        assert!(TemperatureC::new(35.0).is_some());
+        assert!(TemperatureC::new(40.0).is_none());
+    }
+
+    #[test]
+    fn scene_away_sets_expected_state() {
+        let mut home = SmartHome::new_default();
+        let changed = home.apply(Command::Scene(Scene::Away));
+        assert!(changed);
+
+        assert!(home.security.locked);
+
+        // All lights should be off
+        for room in Room::ALL {
+            let state = home.lighting.per_room.get(&room).unwrap();
+            assert!(!state.on);
+        }
+
+        // All heating should be disabled
+        for room in Room::ALL {
+            let state = home.heating.per_room.get(&room).unwrap();
+            assert!(!state.enabled);
+        }
+    }
+
+    #[test]
+    fn lights_toggle_changes_state() {
+        let mut home = SmartHome::new_default();
+        home.apply(Command::LightsToggle {
+            where_: RoomSelection::One(Room::Kitchen),
+        });
+
+        let kitchen = home.lighting.per_room.get(&Room::Kitchen).unwrap();
+        assert!(kitchen.on);
     }
 }
